@@ -23,6 +23,8 @@ interface StaffState {
   error: string;
   login(username: string, password: string): Promise<void>;
   logout(): void;
+  /** เปลี่ยนรหัสแล้วเครื่องอื่นหลุด เครื่องนี้รับ token ใหม่ไปใช้ต่อ */
+  changePassword(currentPassword: string, newPassword: string): Promise<void>;
   reload(): Promise<void>;
   /** ใส่ใบสมัครที่เพิ่งแก้ลงรายการทันที ไม่ต้องรอรอบดึงข้อมูลถัดไป */
   replace(applicant: Applicant): void;
@@ -102,12 +104,18 @@ export function StaffProvider({ children }: { children: ReactNode }) {
     setToken(result.token);
   }, []);
 
+  const changePassword = useCallback(async (currentPassword: string, newPassword: string) => {
+    const result = await api.changePassword(token, currentPassword, newPassword);
+    writeStore('session', TOKEN_KEY, result.token);
+    setToken(result.token);
+  }, [token]);
+
   const replace = useCallback((applicant: Applicant) => {
     setApplicants((list) => list.map((item) => (item.id === applicant.id ? applicant : item)));
   }, []);
 
   return (
-    <StaffContext.Provider value={{ token, staff, settings, programs, applicants, loading, error, login, logout, reload, replace, setSettings }}>
+    <StaffContext.Provider value={{ token, staff, settings, programs, applicants, loading, error, login, logout, changePassword, reload, replace, setSettings }}>
       {children}
     </StaffContext.Provider>
   );

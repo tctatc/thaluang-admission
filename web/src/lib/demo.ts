@@ -134,6 +134,10 @@ const handlers: Record<string, Handler> = {
     if (!staff) fail('BAD_REQUEST', 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
     return { token: `demo:${staff.username}`, staff: { username: staff.username, displayName: staff.displayName, role: staff.role } };
   },
+  changePassword: (_payload, token) => {
+    staffFromToken(token);
+    return fail('FORBIDDEN', 'โหมดสาธิตใช้รหัสตายตัว เปลี่ยนไม่ได้ ระบบจริงเปลี่ยนได้ตามปกติ');
+  },
   me: (_payload, token) => {
     const staff = staffFromToken(token);
     return { staff: { username: staff.username, displayName: staff.displayName, role: staff.role }, settings: settings(), programs: programs(), dataVersion: load(KEY_VERSION, 0) };

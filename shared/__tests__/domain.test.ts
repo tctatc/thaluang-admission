@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SAMPLE_PROGRAMS, DEFAULT_SETTINGS, type Applicant } from '../model';
-import { isValidThaiId, normalizeInput, validateApplication } from '../validate';
+import { checkNewPassword, isValidThaiId, normalizeInput, validateApplication } from '../validate';
 import { checkStudentIdPattern, nextApplicationNo, nextStudentId } from '../numbering';
 import { checkUpload } from '../files';
 import {
@@ -263,5 +263,12 @@ describe('งานผู้ดูแล (แผนก/สาขา ประก
     expect(sheets[0]!.rows.map((r) => r[school])).toEqual(['ก โรงเรียน', 'ข โรงเรียน']);
     const bytes = new TextDecoder().decode(buildWorkbook(sheets));
     expect(bytes).toContain('xl/worksheets/sheet2.xml');
+  });
+
+  it('รหัสผ่านใหม่: ยาวพอ ไม่ซ้ำของเดิม ไม่ใช่ตัวเลขล้วน', () => {
+    expect(checkNewPassword('old', 'short')).toMatch(/อย่างน้อย/);
+    expect(checkNewPassword('samepass1', 'samepass1')).toMatch(/ซ้ำ/);
+    expect(checkNewPassword('old', '12345678')).toMatch(/ตัวเลขล้วน/);
+    expect(checkNewPassword('old', 'thaluang2569')).toBe('');
   });
 });

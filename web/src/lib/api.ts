@@ -91,6 +91,8 @@ export const api = {
     transport.call<{ applicant: PublicApplicant }>('uploadDocument', { ...cred, kind, name, dataBase64 }),
 
   login: (username: string, password: string) => transport.call<{ token: string; staff: StaffUser }>('login', { username, password }),
+  changePassword: (token: string, currentPassword: string, newPassword: string) =>
+    transport.call<{ token: string }>('changePassword', { currentPassword, newPassword }, token),
   staffBootstrap: (token: string) => transport.call<{ staff: StaffUser; settings: Settings; programs: Program[]; applicants: Applicant[]; dataVersion: number }>('staffBootstrap', {}, token),
   me: (token: string) => transport.call<{ staff: StaffUser; settings: Settings; programs: Program[]; dataVersion: number }>('me', {}, token),
   applicants: (token: string) => transport.call<{ applicants: Applicant[]; dataVersion: number }>('applicants', {}, token),

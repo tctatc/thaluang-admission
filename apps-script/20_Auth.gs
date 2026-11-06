@@ -75,10 +75,45 @@ function login_(payload) {
 
   CacheService.getScriptCache().remove(failKey);
   getSheet_(Domain.SHEET_STAFF).getRange(staff.rowNumber, Domain.STAFF_COLUMNS.indexOf('lastLoginAt') + 1).setValue(nowIso_());
-  const body = Utilities.base64EncodeWebSafe(JSON.stringify({
-    u: staff.username, v: Number(staff.tokenVersion) || 1, exp: Date.now() + SESSION_TTL_MS,
-  }));
-  return { token: `${body}.${hmacBase64_(body, requireProp_(PROP_SESSION_SECRET))}`, staff: publicStaff_(staff) };
+  return { token: issueToken_(staff.username, Number(staff.tokenVersion) || 1), staff: publicStaff_(staff) };
+}
+
+function issueToken_(username, version) {
+  const body = Utilities.base64EncodeWebSafe(JSON.stringify({ u: username, v: version, exp: Date.now() + SESSION_TTL_MS }));
+  return `${body}.${hmacBase64_(body, requireProp_(PROP_SESSION_SECRET))}`;
+}
+
+/**
+ * เจ้าหน้าที่เปลี่ยนรหัสผ่านเอง — ต้องใส่รหัสเดิมถูก (ใส่ผิดนับรวมกับการล็อกอินผิด)
+ * เปลี่ยนแล้วเครื่องอื่นที่ล็อกอินค้างไว้หลุดทั้งหมด เครื่องนี้ได้ token ใหม่ใช้ต่อได้เลย
+ */
+function changePassword_(token, payload) {
+  const me = authenticate_(token);
+  const current = String(payload.currentPassword || '');
+  const next = String(payload.newPassword || '');
+  const failKey = `login_fail_${Utilities.base64EncodeWebSafe(me.username.toLowerCase())}`;
+  if (counter_(failKey) >= LOGIN_MAX_FAILURES) {
+    throw appError_(ERROR_CODES.BUSY, `ใส่รหัสผิดหลายครั้ง บัญชีนี้ถูกล็อกชั่วคราว ${LOGIN_LOCK_MINUTES} นาที`);
+  }
+  const problem = Domain.checkNewPassword(current, next);
+  if (problem) throw appError_(ERROR_CODES.VALIDATION, problem, [{ field: 'newPassword', message: problem }]);
+
+  return withScriptLock_(function () {
+    const staff = readStaff_().find(function (item) { return item.username === me.username; });
+    if (!constantTimeEqual_(passwordHash_(staff.username, staff.passwordSalt, current), staff.passwordHash)) {
+      bump_(failKey, LOGIN_LOCK_MINUTES * 60);
+      throw appError_(ERROR_CODES.VALIDATION, 'รหัสผ่านเดิมไม่ถูกต้อง', [{ field: 'currentPassword', message: 'รหัสผ่านเดิมไม่ถูกต้อง' }]);
+    }
+    const credential = newPasswordCredential_(staff.username, next);
+    const version = (Number(staff.tokenVersion) || 1) + 1;
+    const sheet = getSheet_(Domain.SHEET_STAFF);
+    const col = function (name) { return Domain.STAFF_COLUMNS.indexOf(name) + 1; };
+    sheet.getRange(staff.rowNumber, col('passwordSalt')).setValue(credential.passwordSalt);
+    sheet.getRange(staff.rowNumber, col('passwordHash')).setValue(credential.passwordHash);
+    sheet.getRange(staff.rowNumber, col('tokenVersion')).setValue(String(version));
+    CacheService.getScriptCache().remove(failKey);
+    return { token: issueToken_(staff.username, version) };
+  });
 }
 
 /** ตรวจ token แล้วคืนข้อมูลเจ้าหน้าที่จากชีต (ไม่ใช่จาก token) */

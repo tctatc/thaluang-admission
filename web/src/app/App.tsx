@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { Link, NavLink, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
-import { BarChart3, ExternalLink, FlaskConical, Layers, LogOut, Megaphone, QrCode, Settings as SettingsIcon, Users } from 'lucide-react';
+import { BarChart3, ExternalLink, FlaskConical, KeyRound, Layers, LogOut, Megaphone, QrCode, Settings as SettingsIcon, Users } from 'lucide-react';
 import { apiMode, type PublicConfig } from '../lib/api';
 import { useHome } from '../lib/publicData';
 import { cn, Loading } from '../components/ui';
@@ -15,6 +15,7 @@ const ApplicantDetailPage = lazy(() => import('../pages/staff/ApplicantDetailPag
 const SettingsPage = lazy(() => import('../pages/staff/SettingsPage').then((m) => ({ default: m.SettingsPage })));
 const ProgramsPage = lazy(() => import('../pages/staff/ProgramsPage').then((m) => ({ default: m.ProgramsPage })));
 const AnnouncementsPage = lazy(() => import('../pages/staff/AnnouncementsPage').then((m) => ({ default: m.AnnouncementsPage })));
+const AccountPage = lazy(() => import('../pages/staff/AccountPage').then((m) => ({ default: m.AccountPage })));
 const QrPage = lazy(() => import('../pages/staff/QrPage').then((m) => ({ default: m.QrPage })));
 import { StaffProvider, useStaff } from './staff';
 
@@ -34,6 +35,7 @@ export function App() {
         <Route path="programs" element={<Suspense fallback={<Loading />}><ProgramsPage /></Suspense>} />
         <Route path="announcements" element={<Suspense fallback={<Loading />}><AnnouncementsPage /></Suspense>} />
         <Route path="qr" element={<Suspense fallback={<Loading />}><QrPage /></Suspense>} />
+        <Route path="account" element={<Suspense fallback={<Loading />}><AccountPage /></Suspense>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
@@ -130,7 +132,9 @@ function StaffLayout() {
             <Link to="/" className="inline-flex min-h-11 items-center gap-1.5 rounded-control px-3 text-ink-inverse/80 hover:bg-ink-inverse/10 hover:text-ink-inverse">
               <ExternalLink className="size-4" aria-hidden="true" />หน้าเว็บผู้สมัคร
             </Link>
-            <span className="text-ink-inverse/80">{staff.displayName}</span>
+            <Link to="/staff/account" title="บัญชีของฉัน / เปลี่ยนรหัสผ่าน" className="inline-flex min-h-11 items-center gap-1.5 rounded-control px-3 text-ink-inverse/80 hover:bg-ink-inverse/10 hover:text-ink-inverse">
+              <KeyRound className="size-4" aria-hidden="true" />{staff.displayName}
+            </Link>
             <button type="button" onClick={logout} className="inline-flex min-h-11 items-center gap-1.5 rounded-control px-3 text-ink-inverse/80 hover:bg-ink-inverse/10 hover:text-ink-inverse">
               <LogOut className="size-4" aria-hidden="true" />ออกจากระบบ
             </button>

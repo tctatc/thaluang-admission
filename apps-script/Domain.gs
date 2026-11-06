@@ -37,6 +37,7 @@ var Domain = (() => {
     LEVELS: () => LEVELS,
     LEVEL_LABEL: () => LEVEL_LABEL,
     MAX_FILE_BYTES: () => MAX_FILE_BYTES,
+    PASSWORD_MIN: () => PASSWORD_MIN,
     PREFIXES: () => PREFIXES,
     PROGRAM_COLUMNS: () => PROGRAM_COLUMNS,
     PROVINCES: () => PROVINCES,
@@ -63,6 +64,7 @@ var Domain = (() => {
     attachDocument: () => attachDocument,
     bangkokDateKey: () => bangkokDateKey,
     bangkokDateParts: () => bangkokDateParts,
+    checkNewPassword: () => checkNewPassword,
     checkStudentIdPattern: () => checkStudentIdPattern,
     checkUpload: () => checkUpload,
     computePublicStats: () => computePublicStats,
@@ -478,6 +480,14 @@ var Domain = (() => {
     if (!isValidPhone(e.guardianPhone)) issues.push({ field: "guardianPhone", message: "\u0E40\u0E1A\u0E2D\u0E23\u0E4C\u0E42\u0E17\u0E23\u0E1C\u0E39\u0E49\u0E1B\u0E01\u0E04\u0E23\u0E2D\u0E07\u0E15\u0E49\u0E2D\u0E07\u0E40\u0E1B\u0E47\u0E19\u0E15\u0E31\u0E27\u0E40\u0E25\u0E02 10 \u0E2B\u0E25\u0E31\u0E01" });
     if (!parseIsoDate(e.enrolledDate)) issues.push({ field: "enrolledDate", message: "\u0E40\u0E25\u0E37\u0E2D\u0E01\u0E27\u0E31\u0E19\u0E17\u0E35\u0E48\u0E21\u0E2D\u0E1A\u0E15\u0E31\u0E27" });
     return issues;
+  }
+  var PASSWORD_MIN = 8;
+  function checkNewPassword(current, next) {
+    if (next.length < PASSWORD_MIN) return `\u0E23\u0E2B\u0E31\u0E2A\u0E1C\u0E48\u0E32\u0E19\u0E43\u0E2B\u0E21\u0E48\u0E15\u0E49\u0E2D\u0E07\u0E22\u0E32\u0E27\u0E2D\u0E22\u0E48\u0E32\u0E07\u0E19\u0E49\u0E2D\u0E22 ${PASSWORD_MIN} \u0E15\u0E31\u0E27\u0E2D\u0E31\u0E01\u0E29\u0E23`;
+    if (next.length > 64) return "\u0E23\u0E2B\u0E31\u0E2A\u0E1C\u0E48\u0E32\u0E19\u0E43\u0E2B\u0E21\u0E48\u0E22\u0E32\u0E27\u0E40\u0E01\u0E34\u0E19 64 \u0E15\u0E31\u0E27\u0E2D\u0E31\u0E01\u0E29\u0E23";
+    if (next === current) return "\u0E23\u0E2B\u0E31\u0E2A\u0E1C\u0E48\u0E32\u0E19\u0E43\u0E2B\u0E21\u0E48\u0E15\u0E49\u0E2D\u0E07\u0E44\u0E21\u0E48\u0E0B\u0E49\u0E33\u0E23\u0E2B\u0E31\u0E2A\u0E40\u0E14\u0E34\u0E21";
+    if (/^\d+$/.test(next)) return "\u0E23\u0E2B\u0E31\u0E2A\u0E1C\u0E48\u0E32\u0E19\u0E43\u0E2B\u0E21\u0E48\u0E15\u0E49\u0E2D\u0E07\u0E21\u0E35\u0E15\u0E31\u0E27\u0E2D\u0E31\u0E01\u0E29\u0E23\u0E1B\u0E19\u0E14\u0E49\u0E27\u0E22 \u0E44\u0E21\u0E48\u0E43\u0E0A\u0E48\u0E15\u0E31\u0E27\u0E40\u0E25\u0E02\u0E25\u0E49\u0E27\u0E19";
+    return "";
   }
 
   // shared/numbering.ts

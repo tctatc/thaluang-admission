@@ -140,3 +140,14 @@ export function validateEnrollment(e: Enrollment): Issue[] {
   if (!parseIsoDate(e.enrolledDate)) issues.push({ field: 'enrolledDate', message: 'เลือกวันที่มอบตัว' });
   return issues;
 }
+
+export const PASSWORD_MIN = 8;
+
+/** กฎรหัสผ่านที่เจ้าหน้าที่ตั้งเอง — คืนข้อความผิดพลาด หรือ '' ถ้าใช้ได้ */
+export function checkNewPassword(current: string, next: string): string {
+  if (next.length < PASSWORD_MIN) return `รหัสผ่านใหม่ต้องยาวอย่างน้อย ${PASSWORD_MIN} ตัวอักษร`;
+  if (next.length > 64) return 'รหัสผ่านใหม่ยาวเกิน 64 ตัวอักษร';
+  if (next === current) return 'รหัสผ่านใหม่ต้องไม่ซ้ำรหัสเดิม';
+  if (/^\d+$/.test(next)) return 'รหัสผ่านใหม่ต้องมีตัวอักษรปนด้วย ไม่ใช่ตัวเลขล้วน';
+  return '';
+}

@@ -162,6 +162,10 @@ function apiHandlers_() {
       return login_(payload);
     },
 
+    changePassword: function (payload, token) {
+      return changePassword_(token, payload);
+    },
+
     /** หน้าเจ้าหน้าที่เปิดครั้งแรก: ตรวจสิทธิ์ครั้งเดียว แล้วส่งทุกอย่างกลับในคำขอเดียว */
     staffBootstrap: function (payload, token) {
       const staff = authenticate_(token);
