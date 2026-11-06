@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, FileText, Paperclip, Printer, Search } from 'lucide-react';
 import { DOC_INFO, DOC_KINDS } from '@shared/model';
 import { usePublicConfig } from '../app/App';
+import { PublicDashboard } from './PublicDashboard';
 
 export function HomePage() {
   const { config } = usePublicConfig();
@@ -37,6 +38,8 @@ export function HomePage() {
           </div>
         </div>
       </section>
+
+      <PublicDashboard />
 
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 lg:grid-cols-[1.1fr_1fr]">
         <section aria-labelledby="steps">

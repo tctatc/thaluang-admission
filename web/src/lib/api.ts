@@ -13,6 +13,7 @@
 
 import type { Applicant, DocKind, DocState, Program, Settings, Status } from '@shared/model';
 import type { PublicApplicant } from '@shared/service';
+import type { PublicStats } from '@shared/stats';
 import type { Issue } from '@shared/validate';
 import { createDemoBackend } from './demo';
 import { ApiError } from './errors';
@@ -80,6 +81,7 @@ export interface StaffUser { username: string; displayName: string; role: 'admin
 export const api = {
   version: () => transport.version(),
   config: () => transport.call<PublicConfig>('config'),
+  publicStats: () => transport.call<PublicStats>('publicStats'),
   submit: (input: unknown) => transport.call<{ applicant: PublicApplicant }>('submitApplication', input),
   lookup: (cred: Credentials) => transport.call<{ applicant: PublicApplicant; photo: string }>('lookup', cred),
   upload: (cred: Credentials, kind: DocKind, name: string, dataBase64: string) =>

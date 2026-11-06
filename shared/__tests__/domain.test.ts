@@ -186,3 +186,20 @@ describe('ชีตและการส่งออก', () => {
     expect(stats.daily).toHaveLength(30);
   });
 });
+
+describe('ยอดสรุปหน้าแรก', () => {
+  it('นับตามสาขาอันดับ 1 แยกปี และไม่มีข้อมูลรายคน', async () => {
+    const { computePublicStats } = await import('../stats');
+    const repo = memoryRepo();
+    submitApplication(repo, DEFAULT_SETTINGS, SAMPLE_PROGRAMS, goodInput, ctx());
+    submitApplication(repo, { ...DEFAULT_SETTINGS, academicYear: 2569 }, SAMPLE_PROGRAMS, { ...goodInput, level: 'pvs_direct', programPvs: '13' }, ctx());
+    const stats = computePublicStats(repo.items, SAMPLE_PROGRAMS, 2570, '2026-11-06T05:00:00.000Z');
+    expect(stats.years.map((y) => y.year)).toEqual([2570, 2569]);
+    const y70 = stats.years[0]!;
+    expect(y70).toMatchObject({ total: 1, pvc: 1, pvs: 0 });
+    expect(y70.programs[0]).toEqual({ track: 'pvc', code: '01', name: 'ช่างยนต์', value: 1 });
+    expect(y70.programs).toHaveLength(SAMPLE_PROGRAMS.length); // สาขาที่ยังไม่มีคนเลือกก็แสดง
+    expect(JSON.stringify(stats)).not.toContain(VALID_ID);
+    expect(JSON.stringify(stats)).not.toContain('สมชาย');
+  });
+});

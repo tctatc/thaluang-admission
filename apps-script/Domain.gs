@@ -60,6 +60,7 @@ var Domain = (() => {
     bangkokDateParts: () => bangkokDateParts,
     checkStudentIdPattern: () => checkStudentIdPattern,
     checkUpload: () => checkUpload,
+    computePublicStats: () => computePublicStats,
     computeStats: () => computeStats,
     emptyInput: () => emptyInput,
     enroll: () => enroll,
@@ -689,6 +690,37 @@ var Domain = (() => {
       byProvince: tally(list.map((item) => item.province), 10),
       byChannel: tally(list.map((item) => item.channel)),
       daily
+    };
+  }
+  function computePublicStats(all, programs, currentYear, nowIso) {
+    const years = [.../* @__PURE__ */ new Set([currentYear, ...all.map((item) => item.academicYear)])].filter(Boolean).sort((a, b) => b - a);
+    return {
+      updatedAt: nowIso,
+      years: years.map((year) => {
+        var _a;
+        const list = all.filter((item) => item.academicYear === year);
+        const counts = /* @__PURE__ */ new Map();
+        for (const program of programs) {
+          if (program.active) counts.set(`${program.track}:${program.code}`, { track: program.track, code: program.code, name: program.name, value: 0 });
+        }
+        for (const item of list) {
+          const track = item.level === "pvc" ? "pvc" : "pvs";
+          const code = firstChoice(item);
+          if (!code) continue;
+          const key = `${track}:${code}`;
+          const entry = (_a = counts.get(key)) != null ? _a : { track, code, name: programName(programs.filter((p) => p.track === track), code) || `\u0E2A\u0E32\u0E02\u0E32\u0E23\u0E2B\u0E31\u0E2A ${code}`, value: 0 };
+          entry.value += 1;
+          counts.set(key, entry);
+        }
+        const pvc = list.filter((item) => item.level === "pvc").length;
+        return {
+          year,
+          total: list.length,
+          pvc,
+          pvs: list.length - pvc,
+          programs: [...counts.values()].sort((a, b) => b.value - a.value || a.track.localeCompare(b.track) || a.name.localeCompare(b.name, "th"))
+        };
+      })
     };
   }
 

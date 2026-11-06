@@ -16,6 +16,7 @@ import {
   reviewDocument, setStatus, submitApplication, type Ctx, type Repo,
 } from '@shared/service';
 import { checkUpload } from '@shared/files';
+import { computePublicStats } from '@shared/stats';
 import type { Transport } from './api';
 import { ApiError } from './errors';
 import { fileStore, readStore, writeStore } from './storage';
@@ -77,6 +78,7 @@ const handlers: Record<string, Handler> = {
     bump();
     return { applicant: publicView(applicant) };
   },
+  publicStats: () => computePublicStats(repo().list(), SAMPLE_PROGRAMS, settings().academicYear, new Date().toISOString()),
   lookup: async (payload) => {
     const applicant = findByCredentials(repo(), payload.nationalId, payload.birthDate);
     if (!applicant) fail('NOT_FOUND', 'ไม่พบใบสมัคร ตรวจเลขบัตรประชาชนและวันเกิดให้ตรงกับที่กรอกตอนสมัคร');

@@ -89,6 +89,21 @@ function apiHandlers_() {
       return { applicant: Domain.publicView(applicant) };
     },
 
+    /**
+     * ยอดสรุปบนหน้าแรก — ทุกคนเปิดหน้าแรกจะเรียกคำสั่งนี้ จึงเก็บผลไว้ใน cache ตามเลขเวอร์ชันข้อมูล
+     * มีใบสมัครใหม่ = เวอร์ชันเปลี่ยน = คำนวณใหม่ ไม่งั้นไม่ต้องอ่านชีตทั้งก้อนทุกครั้ง
+     */
+    publicStats: function () {
+      const cache = CacheService.getScriptCache();
+      const key = `public_stats_${getDataVersion_()}`;
+      const cached = cache.get(key);
+      if (cached !== null) return JSON.parse(cached);
+      const stats = Domain.computePublicStats(sheetRepo_().list(), readPrograms_(), readSettings_().academicYear, nowIso_());
+      const text = JSON.stringify(stats);
+      if (text.length < 90000) cache.put(key, text, 21600);
+      return stats;
+    },
+
     lookup: function (payload) {
       const applicant = findOwnApplication_(payload);
       return { applicant: Domain.publicView(applicant), photo: photoDataUrl_(applicant) };

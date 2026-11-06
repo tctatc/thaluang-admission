@@ -60,3 +60,45 @@ export function computeStats(all: readonly Applicant[], programs: readonly Progr
     daily,
   };
 }
+
+/* ---------- ยอดสรุปสำหรับหน้าแรก (สาธารณะ) ---------- */
+
+export interface ProgramCount { track: 'pvc' | 'pvs'; code: string; name: string; value: number }
+export interface YearSummary { year: number; total: number; pvc: number; pvs: number; programs: ProgramCount[] }
+export interface PublicStats { years: YearSummary[]; updatedAt: string }
+
+/**
+ * ตัวเลขที่เปิดให้ทุกคนเห็นบนหน้าแรก — มีแต่ยอดรวม ไม่มีชื่อ โรงเรียน หรือข้อมูลรายคน
+ * นับตามสาขาที่เลือกเป็นอันดับ 1 (ความสนใจหลักของผู้สมัคร) และแสดงทุกสาขาที่เปิดรับแม้ยังไม่มีคนเลือก
+ * ปีที่ไม่มีผู้สมัครเลยไม่ส่งออก ยกเว้นปีปัจจุบันที่ต้องมีเสมอ
+ */
+export function computePublicStats(all: readonly Applicant[], programs: readonly Program[], currentYear: number, nowIso: string): PublicStats {
+  const years = [...new Set([currentYear, ...all.map((item) => item.academicYear)])].filter(Boolean).sort((a, b) => b - a);
+  return {
+    updatedAt: nowIso,
+    years: years.map((year) => {
+      const list = all.filter((item) => item.academicYear === year);
+      const counts = new Map<string, ProgramCount>();
+      for (const program of programs) {
+        if (program.active) counts.set(`${program.track}:${program.code}`, { track: program.track, code: program.code, name: program.name, value: 0 });
+      }
+      for (const item of list) {
+        const track = item.level === 'pvc' ? 'pvc' : 'pvs';
+        const code = firstChoice(item);
+        if (!code) continue;
+        const key = `${track}:${code}`;
+        const entry = counts.get(key) ?? { track, code, name: programName(programs.filter((p) => p.track === track), code) || `สาขารหัส ${code}`, value: 0 } as ProgramCount;
+        entry.value += 1;
+        counts.set(key, entry);
+      }
+      const pvc = list.filter((item) => item.level === 'pvc').length;
+      return {
+        year,
+        total: list.length,
+        pvc,
+        pvs: list.length - pvc,
+        programs: [...counts.values()].sort((a, b) => b.value - a.value || a.track.localeCompare(b.track) || a.name.localeCompare(b.name, 'th')),
+      };
+    }),
+  };
+}
