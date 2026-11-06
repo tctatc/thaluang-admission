@@ -14,7 +14,7 @@ const formatPhone = (phone: string) => (/^\d{10}$/.test(phone) ? `${phone.slice(
  * ใบสมัครเข้ารับคัดเลือกเพื่อศึกษาต่อเป็นกรณีพิเศษ (โควตา)
  *
  * วางทุกบรรทัดตามตำแหน่งที่วัดจากไฟล์สแกนต้นฉบับ (A4 210×297 mm) ข้อความคงที่ใช้เลขไทยตามต้นฉบับ
- * ส่วนช่องลงชื่อผู้สมัครเว้นว่างไว้เสมอ ผู้สมัครต้องเซ็นด้วยมือตอนยื่น
+ * ช่องลงชื่อพิมพ์ชื่อผู้สมัครให้เมื่อส่งใบสมัครแล้ว (ผู้สมัครเซ็นทับได้ตอนยื่น)
  */
 export function ApplicationSheet({ data, programs, academicYear, photo }: {
   data: ApplicationSheetData;
@@ -119,7 +119,7 @@ export function ApplicationSheet({ data, programs, academicYear, photo }: {
       </Row>
 
       <Row y={242.8} x={110} right={22}>
-        <span>ลงชื่อ</span><Fill grow />{/* ผู้สมัครเซ็นด้วยมือ */}
+        <span>ลงชื่อ</span><Fill grow>{data.createdAt ? name : ''}</Fill>
         <span>ผู้สมัคร</span>
       </Row>
       <Row y={251.6} x={115.5} right={28}>

@@ -190,7 +190,7 @@ function PrintPanel({ applicant, photo }: { applicant: PublicApplicant; photo: s
       <div className="no-print flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg text-brand-deep">ใบสมัคร (พร้อมพิมพ์)</h2>
-          <p className="text-sm text-ink-muted">ช่องลงชื่อผู้สมัครเว้นไว้ให้เซ็นด้วยมือ · บันทึกเป็น PDF ได้จากหน้าต่างพิมพ์</p>
+          <p className="text-sm text-ink-muted">บันทึกเป็น PDF ได้จากหน้าต่างพิมพ์</p>
         </div>
         <Button onClick={() => window.print()} icon={<Printer className="size-4" aria-hidden="true" />}>พิมพ์ / บันทึก PDF</Button>
       </div>
