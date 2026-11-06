@@ -11,8 +11,8 @@ import { api, errorMessage } from '../../lib/api';
 const cell = 'min-h-10 w-full rounded-[8px] border border-line-strong bg-surface px-2.5 text-[15px] focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20';
 
 /**
- * จัดการแผนกวิชา สาขา และจำนวนรับ — แก้ในตารางแล้วกดบันทึกครั้งเดียว
- * แผนกวิชาเป็นชื่อกลุ่มของสาขา พิมพ์ชื่อแผนกใหม่ = สร้างแผนกใหม่, ไม่มีสาขาเหลือ = แผนกหายไปเอง
+ * จัดการประเภทวิชา สาขา และจำนวนรับ — แก้ในตารางแล้วกดบันทึกครั้งเดียว
+ * ประเภทวิชาเป็นชื่อกลุ่มของสาขา พิมพ์ชื่อประเภทวิชาใหม่ = สร้างกลุ่มใหม่, ไม่มีสาขาเหลือ = กลุ่มหายไปเอง
  */
 export function ProgramsPage() {
   const { staff, programs, applicants, settings, token, reload } = useStaff();
@@ -56,7 +56,7 @@ export function ProgramsPage() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-brand-deep">แผนกวิชา สาขา และจำนวนรับ</h1>
+          <h1 className="text-2xl font-bold text-brand-deep">ประเภทวิชา สาขา และจำนวนรับ</h1>
           <p className="text-sm text-ink-muted">"สมัครแล้ว" นับผู้ที่เลือกเป็นอันดับ 1 ในปีการศึกษา {year} · จำนวนรับ 0 = ไม่จำกัด</p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -76,17 +76,17 @@ export function ProgramsPage() {
         return (
           <section key={department || '_'} className="overflow-hidden rounded-card bg-surface shadow-card ring-1 ring-line">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-sunken px-4 py-3">
-              <h2 className="text-lg text-brand-deep">{department ? `แผนกวิชา${department}` : 'ยังไม่ได้ระบุแผนก'}</h2>
+              <h2 className="text-lg text-brand-deep">{department ? `ประเภทวิชา${department}` : 'ยังไม่ได้ระบุประเภทวิชา'}</h2>
               <div className="flex items-center gap-3 text-sm text-ink-muted">
                 <span data-numeric>สมัครแล้ว {applied}{quota ? ` / รับ ${quota}` : ''} คน</span>
-                {department && <Button variant="ghost" className="min-h-9 px-2 text-sm" onClick={() => add(department)} icon={<Plus className="size-4" aria-hidden="true" />}>เพิ่มสาขาในแผนกนี้</Button>}
+                {department && <Button variant="ghost" className="min-h-9 px-2 text-sm" onClick={() => add(department)} icon={<Plus className="size-4" aria-hidden="true" />}>เพิ่มสาขาในประเภทวิชานี้</Button>}
               </div>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[860px] text-left text-[15px]">
                 <thead className="text-sm text-ink-muted">
                   <tr>
-                    <th className="px-3 py-2 font-medium">แผนกวิชา</th>
+                    <th className="px-3 py-2 font-medium">ประเภทวิชา</th>
                     <th className="w-28 px-3 py-2 font-medium">ระดับ</th>
                     <th className="w-20 px-3 py-2 font-medium">รหัส</th>
                     <th className="px-3 py-2 font-medium">ชื่อสาขาวิชา</th>
@@ -102,7 +102,7 @@ export function ProgramsPage() {
                     const full = row.quota > 0 && count >= row.quota;
                     return (
                       <tr key={index} className={cn(!row.active && 'bg-sunken/60 text-ink-muted')}>
-                        <td className="px-3 py-2"><input aria-label="แผนกวิชา" list="departments" className={cell} value={row.department} onChange={(e) => set(index, { department: e.target.value })} placeholder="เช่น ช่างยนต์" /></td>
+                        <td className="px-3 py-2"><input aria-label="ประเภทวิชา" list="departments" className={cell} value={row.department} onChange={(e) => set(index, { department: e.target.value })} placeholder="เช่น อุตสาหกรรม" /></td>
                         <td className="px-3 py-2">
                           <select aria-label="ระดับ" className={cell} value={row.track} onChange={(e) => set(index, { track: e.target.value as Program['track'] })}>
                             <option value="pvc">ปวช.</option><option value="pvs">ปวส.</option>

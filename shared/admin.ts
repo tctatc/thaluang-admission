@@ -1,5 +1,5 @@
 /**
- * กฎของงานผู้ดูแล: แผนกวิชา/สาขา/จำนวนรับ ประกาศ และข้อความหน้าเว็บ
+ * กฎของงานผู้ดูแล: ประเภทวิชา/สาขา/จำนวนรับ ประกาศ และข้อความหน้าเว็บ
  * ทั้ง Apps Script และโหมดสาธิตเรียกชุดเดียวกัน (ผู้เรียกฝั่ง server ครอบด้วยล็อกเอง)
  */
 
@@ -28,14 +28,14 @@ export function normalizePrograms(raw: unknown, applicants: readonly Applicant[]
       track,
       code: toArabicDigits(text(source.code, 4)),
       name: text(source.name, 80),
-      department: text(source.department, 60).replace(/^แผนกวิชา\s*/, ''),
+      department: text(source.department, 60).replace(/^(แผนกวิชา|ประเภทวิชา)\s*/, ''),
       quota: Number(toArabicDigits(String(source.quota ?? '0'))),
       active: source.active !== false,
     };
     const at = (field: string, message: string) => issues.push({ field: `${index}.${field}`, message });
     if (!/^[0-9]{2}$/.test(program.code)) at('code', 'รหัสสาขาต้องเป็นตัวเลข 2 หลัก เช่น 01');
     if (program.name === '') at('name', 'กรอกชื่อสาขาวิชา');
-    if (program.department === '') at('department', 'กรอกแผนกวิชา');
+    if (program.department === '') at('department', 'กรอกประเภทวิชา');
     if (!Number.isInteger(program.quota) || program.quota < 0 || program.quota > 9999) at('quota', 'จำนวนรับต้องเป็นจำนวนเต็ม 0–9999 (0 = ไม่จำกัด)');
     const key = `${track}:${program.code}`;
     if (seen.has(key)) at('code', `รหัส ${program.code} ซ้ำในระดับ ${track === 'pvc' ? 'ปวช.' : 'ปวส.'}`);

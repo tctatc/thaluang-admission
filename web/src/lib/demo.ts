@@ -25,7 +25,7 @@ import { fileStore, readStore, writeStore } from './storage';
 const KEY_APPLICANTS = 'tla.demo.applicants.v1';
 const KEY_SETTINGS = 'tla.demo.settings.v1';
 const KEY_VERSION = 'tla.demo.version.v1';
-const KEY_PROGRAMS = 'tla.demo.programs.v2';
+const KEY_PROGRAMS = 'tla.demo.programs.v3';
 const KEY_ANNOUNCEMENTS = 'tla.demo.announcements.v1';
 
 /** บัญชีเจ้าหน้าที่ของโหมดสาธิต (หน้าเข้าสู่ระบบแสดงไว้ให้) */

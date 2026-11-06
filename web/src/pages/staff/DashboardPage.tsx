@@ -72,7 +72,7 @@ export function DashboardPage() {
               <Panel title="ตามสถานะ"><Bars data={stats.byStatus} /></Panel>
               <Panel title="ตามระดับที่สมัคร"><Bars data={stats.byLevel} /></Panel>
             </div>
-            <Panel title="ตามแผนกวิชา"><Bars data={stats.byDepartment} /></Panel>
+            <Panel title="ตามประเภทวิชา"><Bars data={stats.byDepartment} /></Panel>
             <Panel title="โรงเรียนเดิม (10 อันดับแรก)"><Bars data={stats.bySchool} /></Panel>
             <Panel title="จังหวัด (10 อันดับแรก)"><Bars data={stats.byProvince} /></Panel>
             <Panel title="ช่องทางที่รู้จักวิทยาลัย"><Bars data={stats.byChannel} /></Panel>

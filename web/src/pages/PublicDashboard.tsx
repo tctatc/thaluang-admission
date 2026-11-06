@@ -65,7 +65,7 @@ export function PublicDashboard() {
               <Card title="สัดส่วนระดับที่สมัคร" subtitle="ชี้ที่วงเพื่อดูตัวเลข"><LevelDonut summary={summary} /></Card>
             </div>
             <Card
-              title="จำนวนผู้สมัครแยกแผนกวิชา"
+              title="จำนวนผู้สมัครแยกประเภทวิชา"
               subtitle="เรียงจากมากไปน้อย"
               action={
                 <div role="tablist" aria-label="ระดับ" className="inline-flex rounded-full bg-sunken p-1 ring-1 ring-line">
@@ -250,7 +250,7 @@ function LevelDonut({ summary }: { summary: YearSummary }) {
   );
 }
 
-/** อันดับทุกแผนกวิชา: แถบนูนยืดจาก 0 ไล่ทีละแถว ชี้แถวไหนแถวอื่นจางลง */
+/** อันดับทุกประเภทวิชา: แถบนูนยืดจาก 0 ไล่ทีละแถว ชี้แถวไหนแถวอื่นจางลง */
 function Ranking({ programs }: { programs: ProgramCount[] }) {
   const max = Math.max(1, ...programs.map((p) => p.value));
   if (programs.length === 0) return <p className="py-6 text-center text-ink-muted">ยังไม่มีสาขาในระดับนี้</p>;
@@ -289,7 +289,7 @@ function Ranking({ programs }: { programs: ProgramCount[] }) {
   );
 }
 
-/** ตารางจำนวนรับ/สมัครแล้ว/คงเหลือ แยกตามแผนกวิชา — ใกล้เต็มและเต็มแล้วมีป้ายบอก ไม่ใช้สีอย่างเดียว */
+/** ตารางจำนวนรับ/สมัครแล้ว/คงเหลือ แยกตามประเภทวิชา — ใกล้เต็มและเต็มแล้วมีป้ายบอก ไม่ใช้สีอย่างเดียว */
 export function QuotaTable({ programs }: { programs: ProgramCount[] }) {
   const departments = [...new Set(programs.map((p) => p.department || 'อื่น ๆ'))].sort((a, b) => a.localeCompare(b, 'th'));
   if (programs.length === 0) return <p className="py-6 text-center text-ink-muted">ยังไม่มีสาขาที่เปิดรับ</p>;
@@ -307,7 +307,7 @@ export function QuotaTable({ programs }: { programs: ProgramCount[] }) {
         </thead>
         {departments.map((department) => (
           <tbody key={department} className="divide-y divide-line">
-            <tr><th colSpan={5} className="bg-sunken px-5 py-2 text-sm font-semibold text-brand-deep sm:px-3">แผนกวิชา{department}</th></tr>
+            <tr><th colSpan={5} className="bg-sunken px-5 py-2 text-sm font-semibold text-brand-deep sm:px-3">ประเภทวิชา{department}</th></tr>
             {programs.filter((p) => (p.department || 'อื่น ๆ') === department)
               .sort((a, b) => a.track.localeCompare(b.track) || a.code.localeCompare(b.code))
               .map((p) => {

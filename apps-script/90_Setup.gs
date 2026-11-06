@@ -4,6 +4,7 @@
  * setupSystem()            สร้าง/ซ่อมไฟล์ข้อมูล ชีต โฟลเดอร์ และกุญแจลับ รันซ้ำได้ ไม่ลบข้อมูลเดิม
  * addStaff()               เพิ่มเจ้าหน้าที่ (แก้ค่าในฟังก์ชันก่อนรัน) รหัสผ่านชั่วคราวขึ้นใน Execution log
  * resetStaffPassword()     ออกรหัสผ่านใหม่ และเตะ session เดิมออกทั้งหมด
+ * loadPrograms2570()       เขียนทับสาขา/จำนวนรับ ตามประกาศรับสมัครโควตา ปีการศึกษา 2570 (30 สาขา)
  */
 
 const SHEET_LAYOUT_ = [
@@ -57,7 +58,7 @@ function setupSystem() {
   if (programs.getLastRow() < 2) {
     writePrograms_(Domain.SAMPLE_PROGRAMS);
   } else {
-    // ชีตรุ่นแรกยังไม่มีแผนก/จำนวนรับ — เขียนใหม่ตามรูปแบบล่าสุด (แผนกเริ่มต้น = ชื่อสาขา แก้ต่อในหน้าเว็บได้)
+    // ชีตรุ่นแรกยังไม่มีแผนก/จำนวนรับ — เขียนใหม่ตามรูปแบบล่าสุด (ประเภทวิชาเริ่มต้น = ชื่อสาขา แก้ต่อในหน้าเว็บได้)
     writePrograms_(readPrograms_());
   }
   const settings = getSheet_(Domain.SHEET_SETTINGS);
@@ -118,6 +119,18 @@ function resetStaffPassword() {
   sheet.getRange(staff.rowNumber, col('tokenVersion')).setValue(String((Number(staff.tokenVersion) || 1) + 1));
   CacheService.getScriptCache().remove(`login_fail_${Utilities.base64EncodeWebSafe(username)}`);
   console.log(`รหัสผ่านใหม่ของ ${username}: ${password}`);
+}
+
+/** เขียนทับชีต Programs ด้วยรายการตามประกาศ — ถ้ามีผู้สมัครเลือกสาขาที่จะหายไป ระบบไม่ยอมลบและแจ้งชื่อสาขา */
+function loadPrograms2570() {
+  const programs = withScriptLock_(function () {
+    const next = Domain.normalizePrograms(Domain.SAMPLE_PROGRAMS, sheetRepo_().list());
+    writePrograms_(next);
+    bumpDataVersion_();
+    return next;
+  });
+  audit_('setup', 'loadPrograms2570', '', `${programs.length} สาขา`);
+  console.log(`บันทึกแล้ว ${programs.length} สาขา (ปวช. ${programs.filter(function (p) { return p.track === 'pvc'; }).length}, ปวส. ${programs.filter(function (p) { return p.track === 'pvs'; }).length})`);
 }
 
 /** ทดสอบส่ง LINE เข้ากลุ่มเจ้าหน้าที่หลังใส่ LINE_CHANNEL_TOKEN และ LINE_TO */

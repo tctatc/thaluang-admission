@@ -129,9 +129,9 @@ export function ApplicantsPage() {
           <option value="pvs">ปวส. ทั้งหมด</option>
           {LEVELS.filter((l) => l !== 'pvc').map((l) => <option key={l} value={l}>{LEVEL_LABEL[l]}</option>)}
         </select>
-        <select aria-label="แผนกวิชา" value={department} onChange={(e) => setParam('dept', e.target.value)} className={control}>
-          <option value="">ทุกแผนกวิชา</option>
-          {departmentsOf(programs).map((d) => <option key={d} value={d}>แผนกวิชา{d}</option>)}
+        <select aria-label="ประเภทวิชา" value={department} onChange={(e) => setParam('dept', e.target.value)} className={control}>
+          <option value="">ทุกประเภทวิชา</option>
+          {departmentsOf(programs).map((d) => <option key={d} value={d}>ประเภทวิชา{d}</option>)}
         </select>
         <select aria-label="สาขาวิชา" value={program} onChange={(e) => setParam('program', e.target.value)} className={control}>
           <option value="">ทุกสาขา</option>

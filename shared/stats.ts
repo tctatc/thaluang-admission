@@ -63,7 +63,7 @@ export function computeStats(all: readonly Applicant[], programs: readonly Progr
     byDepartment: tally(list.map((item) => {
       const track = item.level === 'pvc' ? 'pvc' : 'pvs';
       return programs.find((p) => p.track === track && p.code === firstChoice(item))?.department ?? '';
-    }).filter(Boolean).map((name) => `แผนกวิชา${name}`)),
+    }).filter(Boolean).map((name) => `ประเภทวิชา${name}`)),
     quota: computePublicStats(all, programs, academicYear, nowIso).years.find((y) => y.year === academicYear)?.programs ?? [],
     daily,
   };

@@ -26,7 +26,7 @@ export function QrPage() {
     ...active.map((p) => ({
       key: `${p.track}:${p.code}`,
       title: `${p.track === 'pvc' ? 'ปวช.' : 'ปวส.'} ${p.name}`,
-      subtitle: `แผนกวิชา${p.department}`,
+      subtitle: `ประเภทวิชา${p.department}`,
       url: applyLink(`${p.track}:${p.code}`),
     })),
   ], [active]);
@@ -52,9 +52,9 @@ export function QrPage() {
         </div>
         {departmentsOf(active).map((department) => (
           <div key={department} className="mt-3">
-            <p className="text-sm text-ink-muted">แผนกวิชา{department}</p>
+            <p className="text-sm text-ink-muted">ประเภทวิชา{department}</p>
             <div className="mt-1 flex flex-wrap gap-2">
-              {targets.filter((t) => t.subtitle === `แผนกวิชา${department}`).map((t) => (
+              {targets.filter((t) => t.subtitle === `ประเภทวิชา${department}`).map((t) => (
                 <Chip key={t.key} on={selected.includes(t.key)} onClick={() => toggle(t.key)}>{t.title}</Chip>
               ))}
             </div>

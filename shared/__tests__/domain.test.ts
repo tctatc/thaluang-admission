@@ -61,7 +61,7 @@ describe('ตรวจข้อมูล', () => {
   });
 
   it('สาขาต้องตรงระดับที่สมัคร', () => {
-    const input = normalizeInput({ ...goodInput, level: 'pvs_direct', programPvs: '01' });
+    const input = normalizeInput({ ...goodInput, level: 'pvs_direct', programPvs: '18' });
     expect(validateApplication(input, SAMPLE_PROGRAMS, TODAY).map((i) => i.field)).toContain('programPvs');
   });
 
@@ -197,14 +197,14 @@ describe('ยอดสรุปหน้าแรก', () => {
     expect(stats.years.map((y) => y.year)).toEqual([2570, 2569]);
     const y70 = stats.years[0]!;
     expect(y70).toMatchObject({ total: 1, pvc: 1, pvs: 0 });
-    expect(y70.programs[0]).toMatchObject({ track: 'pvc', code: '01', name: 'ช่างยนต์', department: 'ช่างยนต์', quota: 40, value: 1 });
+    expect(y70.programs[0]).toMatchObject({ track: 'pvc', code: '01', name: 'ช่างยนต์', department: 'อุตสาหกรรม', quota: 20, value: 1 });
     expect(y70.programs).toHaveLength(SAMPLE_PROGRAMS.length); // สาขาที่ยังไม่มีคนเลือกก็แสดง
     expect(JSON.stringify(stats)).not.toContain(VALID_ID);
     expect(JSON.stringify(stats)).not.toContain('สมชาย');
   });
 });
 
-describe('งานผู้ดูแล (แผนก/สาขา ประกาศ แก้ข้อมูล)', async () => {
+describe('งานผู้ดูแล (ประเภทวิชา/สาขา ประกาศ แก้ข้อมูล)', async () => {
   const admin = await import('../admin');
   const { exportByProgram } = await import('../exportData');
   const { buildWorkbook } = await import('../xlsx');
@@ -256,7 +256,7 @@ describe('งานผู้ดูแล (แผนก/สาขา ประก
     const repo = memoryRepo();
     submitApplication(repo, DEFAULT_SETTINGS, SAMPLE_PROGRAMS, { ...goodInput, schoolName: 'ข โรงเรียน' }, ctx());
     submitApplication(repo, DEFAULT_SETTINGS, SAMPLE_PROGRAMS, { ...goodInput, nationalId: '3100600123450', schoolName: 'ก โรงเรียน' }, ctx());
-    submitApplication(repo, DEFAULT_SETTINGS, SAMPLE_PROGRAMS, { ...goodInput, nationalId: '1234567890121', level: 'pvs_direct', programPvs: '13' }, ctx());
+    submitApplication(repo, DEFAULT_SETTINGS, SAMPLE_PROGRAMS, { ...goodInput, nationalId: '1234567890121', level: 'pvs_direct', programPvs: '06' }, ctx());
     const sheets = exportByProgram(repo.items, SAMPLE_PROGRAMS);
     expect(sheets.map((s) => s.name)).toEqual(['ปวช ช่างยนต์', 'ปวส ไฟฟ้า']);
     const school = sheets[0]!.headers.indexOf('โรงเรียนเดิม');
@@ -270,5 +270,15 @@ describe('งานผู้ดูแล (แผนก/สาขา ประก
     expect(checkNewPassword('samepass1', 'samepass1')).toMatch(/ซ้ำ/);
     expect(checkNewPassword('old', '12345678')).toMatch(/ตัวเลขล้วน/);
     expect(checkNewPassword('old', 'thaluang2569')).toBe('');
+  });
+});
+
+describe('สาขาตามประกาศรับสมัครโควตา 2570', () => {
+  it('ปวช. 13 สาขา รวม 215 คน, ปวส. 17 สาขา รวม 385 คน', () => {
+    const of = (track: string) => SAMPLE_PROGRAMS.filter((p) => p.track === track);
+    expect(of('pvc')).toHaveLength(13);
+    expect(of('pvs')).toHaveLength(17);
+    expect(of('pvc').reduce((n, p) => n + p.quota, 0)).toBe(215);
+    expect(of('pvs').reduce((n, p) => n + p.quota, 0)).toBe(385);
   });
 });

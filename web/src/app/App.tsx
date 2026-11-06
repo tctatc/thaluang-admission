@@ -122,7 +122,7 @@ function StaffLayout() {
             <NavLink to="/staff/qr" className={link}><QrCode className="size-4" aria-hidden="true" />QR Code</NavLink>
             {staff.role === 'admin' && (
               <>
-                <NavLink to="/staff/programs" className={link}><Layers className="size-4" aria-hidden="true" />แผนก/สาขา</NavLink>
+                <NavLink to="/staff/programs" className={link}><Layers className="size-4" aria-hidden="true" />ประเภทวิชา/สาขา</NavLink>
                 <NavLink to="/staff/announcements" className={link}><Megaphone className="size-4" aria-hidden="true" />ประกาศ</NavLink>
                 <NavLink to="/staff/settings" className={link}><SettingsIcon className="size-4" aria-hidden="true" />ตั้งค่า</NavLink>
               </>
