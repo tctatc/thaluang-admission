@@ -93,6 +93,19 @@ const handlers: Record<string, Handler> = {
     bump();
     return { applicant: publicView(applicant) };
   },
+  home: () => ({
+    dataVersion: load<number>(KEY_VERSION, 0),
+    config: handlers.config!({}, ''),
+    announcements: publicAnnouncements(announcements()),
+    stats: computePublicStats(repo().list(), programs(), settings().academicYear, new Date().toISOString()),
+  }),
+  staffBootstrap: (_payload, token) => {
+    const staff = staffFromToken(token);
+    return {
+      staff: { username: staff.username, displayName: staff.displayName, role: staff.role },
+      settings: settings(), programs: programs(), applicants: repo().list(), dataVersion: load(KEY_VERSION, 0),
+    };
+  },
   publicStats: () => computePublicStats(repo().list(), programs(), settings().academicYear, new Date().toISOString()),
   lookup: async (payload) => {
     const applicant = findByCredentials(repo(), payload.nationalId, payload.birthDate);

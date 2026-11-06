@@ -65,22 +65,58 @@ function photoDataUrl_(applicant) {
   }
 }
 
+/**
+ * เก็บผลลัพธ์ไว้ใน CacheService ตามเลขเวอร์ชันข้อมูล — ข้อมูลเปลี่ยน = เวอร์ชันเปลี่ยน = คำนวณใหม่เอง
+ * อายุสั้น (5 นาที) เผื่อเจ้าหน้าที่แก้ชีตตรง ๆ ซึ่งไม่ได้เพิ่มเวอร์ชัน
+ * Apps Script เปิดไฟล์ชีตครั้งละ ~1 วินาที การไม่ต้องเปิดเลยคือส่วนที่เร็วขึ้นมากที่สุด
+ */
+function cachedByVersion_(name, compute) {
+  const cache = CacheService.getScriptCache();
+  const key = `${name}_${getDataVersion_()}`;
+  const hit = cache.get(key);
+  if (hit !== null) return JSON.parse(hit);
+  const value = compute();
+  const text = JSON.stringify(value);
+  if (text.length < 95000) cache.put(key, text, 300);
+  return value;
+}
+
+function publicConfig_() {
+  const settings = readSettings_();
+  return {
+    academicYear: settings.academicYear,
+    applicationsOpen: settings.applicationsOpen,
+    programs: readPrograms_().filter(function (program) { return program.active; }),
+    siteText: { heroTitle: settings.heroTitle, heroText: settings.heroText, details: settings.details },
+  };
+}
+
 function apiHandlers_() {
   return {
     /* ---------- ผู้สมัคร (ไม่ต้องเข้าสู่ระบบ) ---------- */
 
     config: function () {
-      const settings = readSettings_();
-      return {
-        academicYear: settings.academicYear,
-        applicationsOpen: settings.applicationsOpen,
-        programs: readPrograms_().filter(function (program) { return program.active; }),
-        siteText: { heroTitle: settings.heroTitle, heroText: settings.heroText, details: settings.details },
-      };
+      return cachedByVersion_('config', publicConfig_);
+    },
+
+    /** ทุกอย่างที่หน้าแรกต้องใช้ในคำขอเดียว (เดิมแยก 4 คำขอ แต่ละคำขอเปิดชีตเอง) */
+    home: function () {
+      return cachedByVersion_('home', function () {
+        const settings = readSettings_();
+        const programs = readPrograms_();
+        return {
+          dataVersion: getDataVersion_(),
+          config: publicConfig_(),
+          announcements: Domain.publicAnnouncements(readAnnouncements_()),
+          stats: Domain.computePublicStats(sheetRepo_().list(), programs, settings.academicYear, nowIso_()),
+        };
+      });
     },
 
     announcements: function () {
-      return { announcements: Domain.publicAnnouncements(readAnnouncements_()) };
+      return cachedByVersion_('announcements', function () {
+        return { announcements: Domain.publicAnnouncements(readAnnouncements_()) };
+      });
     },
 
     submitApplication: function (payload) {
@@ -94,19 +130,10 @@ function apiHandlers_() {
       return { applicant: Domain.publicView(applicant) };
     },
 
-    /**
-     * ยอดสรุปบนหน้าแรก — ทุกคนเปิดหน้าแรกจะเรียกคำสั่งนี้ จึงเก็บผลไว้ใน cache ตามเลขเวอร์ชันข้อมูล
-     * มีใบสมัครใหม่ = เวอร์ชันเปลี่ยน = คำนวณใหม่ ไม่งั้นไม่ต้องอ่านชีตทั้งก้อนทุกครั้ง
-     */
     publicStats: function () {
-      const cache = CacheService.getScriptCache();
-      const key = `public_stats_${getDataVersion_()}`;
-      const cached = cache.get(key);
-      if (cached !== null) return JSON.parse(cached);
-      const stats = Domain.computePublicStats(sheetRepo_().list(), readPrograms_(), readSettings_().academicYear, nowIso_());
-      const text = JSON.stringify(stats);
-      if (text.length < 90000) cache.put(key, text, 21600);
-      return stats;
+      return cachedByVersion_('public_stats', function () {
+        return Domain.computePublicStats(sheetRepo_().list(), readPrograms_(), readSettings_().academicYear, nowIso_());
+      });
     },
 
     lookup: function (payload) {
@@ -133,6 +160,18 @@ function apiHandlers_() {
 
     login: function (payload) {
       return login_(payload);
+    },
+
+    /** หน้าเจ้าหน้าที่เปิดครั้งแรก: ตรวจสิทธิ์ครั้งเดียว แล้วส่งทุกอย่างกลับในคำขอเดียว */
+    staffBootstrap: function (payload, token) {
+      const staff = authenticate_(token);
+      return {
+        staff: staff,
+        settings: readSettings_(),
+        programs: readPrograms_(),
+        applicants: sheetRepo_().list(),
+        dataVersion: getDataVersion_(),
+      };
     },
 
     me: function (payload, token) {

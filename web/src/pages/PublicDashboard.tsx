@@ -1,49 +1,28 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Crown, GraduationCap, Users, Wrench } from 'lucide-react';
-import type { ProgramCount, PublicStats, YearSummary } from '@shared/stats';
+import type { ProgramCount, YearSummary } from '@shared/stats';
 import { cn } from '../components/ui';
-import { api } from '../lib/api';
+import { useHome } from '../lib/publicData';
 import { CountUp, useAnimatedNumber } from '../lib/useAnimatedNumber';
 
-const POLL_MS = 15_000;
 const COLOR = { brand: 'var(--color-brand)', gold: 'var(--color-gold)', deep: 'var(--color-brand-deep)' };
 type Filter = 'all' | 'pvc' | 'pvs';
 const TRACK_SHORT = { pvc: 'ปวช.', pvs: 'ปวส.' } as const;
 
 /**
  * ยอดผู้สมัครบนหน้าแรก — แสดงแค่ตัวเลขรวม ไม่มีข้อมูลรายคน
- * ถามเลขเวอร์ชันข้อมูลทุก 15 วินาที (เบามาก) และดึงยอดใหม่เมื่อมีคนสมัครเพิ่มเท่านั้น
+ * ข้อมูลมาจากชุดข้อมูลหน้าแรก (lib/publicData) ซึ่งแสดงชุดที่เก็บในเครื่องก่อนแล้วอัปเดตเอง
  */
 export function PublicDashboard() {
-  const [stats, setStats] = useState<PublicStats | null>(null);
+  const { home, error } = useHome();
+  const stats = home?.stats ?? null;
   const [year, setYear] = useState<number | null>(null);
   const [filter, setFilter] = useState<Filter>('all');
 
-  useEffect(() => {
-    let version = -1;
-    let alive = true;
-    const refresh = async () => {
-      try {
-        const next = await api.version();
-        if (next.dataVersion === version) return;
-        version = next.dataVersion;
-        const data = await api.publicStats();
-        if (alive) setStats(data);
-      } catch {
-        // หน้าแรกต้องเปิดได้เสมอแม้ดึงยอดไม่สำเร็จ ส่วนนี้แค่ไม่แสดง
-      }
-    };
-    // ครั้งแรกยิงสองคำสั่งพร้อมกัน: Apps Script ตอบคำสั่งละ ~2 วินาที ถ้ารอต่อกันยอดจะขึ้นช้าเป็นเท่าตัว
-    Promise.all([api.version(), api.publicStats()])
-      .then(([next, data]) => { version = next.dataVersion; if (alive) setStats(data); })
-      .catch(() => {});
-    const timer = window.setInterval(() => { if (!document.hidden) void refresh(); }, POLL_MS);
-    return () => { alive = false; window.clearInterval(timer); };
-  }, []);
-
   const summary = useMemo(() => stats?.years.find((item) => item.year === year) ?? stats?.years[0] ?? null, [stats, year]);
-  if (!stats || !summary) return null;
+  if (error && !stats) return null;
+  if (!stats || !summary) return <DashboardSkeleton />;
 
   return (
     <section aria-labelledby="stats-heading" className="mx-auto max-w-6xl px-4 pt-12">
@@ -359,5 +338,21 @@ export function QuotaTable({ programs }: { programs: ProgramCount[] }) {
         ))}
       </table>
     </div>
+  );
+}
+
+/** โครงร่างระหว่างรอข้อมูลครั้งแรก — กันหน้ากระโดดตอนกราฟโผล่ */
+function DashboardSkeleton() {
+  return (
+    <section aria-label="กำลังโหลดยอดผู้สมัคร" aria-busy="true" className="mx-auto max-w-6xl px-4 pt-12">
+      <div className="h-8 w-72 animate-pulse rounded-control bg-sunken" />
+      <div className="mt-6 grid gap-3 sm:grid-cols-3">
+        {[0, 1, 2].map((i) => <div key={i} className="h-21 animate-pulse rounded-card bg-surface ring-1 ring-line" />)}
+      </div>
+      <div className="mt-5 grid gap-5 lg:grid-cols-[1.4fr_1fr]">
+        <div className="h-96 animate-pulse rounded-card bg-surface ring-1 ring-line" />
+        <div className="h-96 animate-pulse rounded-card bg-surface ring-1 ring-line" />
+      </div>
+    </section>
   );
 }

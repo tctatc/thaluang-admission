@@ -76,12 +76,14 @@ export const apiMode = transport.mode;
 
 export interface SiteText { heroTitle: string; heroText: string; details: string }
 export interface PublicConfig { academicYear: number; applicationsOpen: boolean; programs: Program[]; siteText: SiteText }
+export interface HomeData { dataVersion: number; config: PublicConfig; announcements: Announcement[]; stats: PublicStats }
 export interface Credentials { nationalId: string; birthDate: string }
 export interface StaffUser { username: string; displayName: string; role: 'admin' | 'staff' }
 
 export const api = {
   version: () => transport.version(),
   config: () => transport.call<PublicConfig>('config'),
+  home: () => transport.call<HomeData>('home'),
   publicStats: () => transport.call<PublicStats>('publicStats'),
   submit: (input: unknown) => transport.call<{ applicant: PublicApplicant }>('submitApplication', input),
   lookup: (cred: Credentials) => transport.call<{ applicant: PublicApplicant; photo: string }>('lookup', cred),
@@ -89,6 +91,7 @@ export const api = {
     transport.call<{ applicant: PublicApplicant }>('uploadDocument', { ...cred, kind, name, dataBase64 }),
 
   login: (username: string, password: string) => transport.call<{ token: string; staff: StaffUser }>('login', { username, password }),
+  staffBootstrap: (token: string) => transport.call<{ staff: StaffUser; settings: Settings; programs: Program[]; applicants: Applicant[]; dataVersion: number }>('staffBootstrap', {}, token),
   me: (token: string) => transport.call<{ staff: StaffUser; settings: Settings; programs: Program[]; dataVersion: number }>('me', {}, token),
   applicants: (token: string) => transport.call<{ applicants: Applicant[]; dataVersion: number }>('applicants', {}, token),
   getFile: (token: string, id: string, kind: DocKind) => transport.call<{ name: string; mime: string; dataBase64: string }>('getFile', { id, kind }, token),

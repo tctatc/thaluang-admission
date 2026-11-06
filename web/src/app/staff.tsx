@@ -57,12 +57,13 @@ export function StaffProvider({ children }: { children: ReactNode }) {
   const reload = useCallback(async () => {
     if (!token) return;
     try {
-      const [me, list] = await Promise.all([api.me(token), api.applicants(token)]);
-      setStaff(me.staff);
-      setSettings(me.settings);
-      setPrograms(me.programs);
-      setApplicants(list.applicants);
-      version.current = list.dataVersion;
+      // คำขอเดียว: ตรวจสิทธิ์และเปิดชีตครั้งเดียว (เดิมสองคำขอ ต่างคนต่างเปิดชีต)
+      const data = await api.staffBootstrap(token);
+      setStaff(data.staff);
+      setSettings(data.settings);
+      setPrograms(data.programs);
+      setApplicants(data.applicants);
+      version.current = data.dataVersion;
       setError('');
     } catch (cause) {
       handleError(cause);
@@ -81,11 +82,11 @@ export function StaffProvider({ children }: { children: ReactNode }) {
         const { dataVersion } = await api.version();
         if (dataVersion !== version.current) {
           // สาขา/จำนวนรับอาจถูกผู้ดูแลอีกเครื่องแก้ ดึงมาพร้อมกันเลย
-          const [me, list] = await Promise.all([api.me(token), api.applicants(token)]);
-          setPrograms(me.programs);
-          setSettings(me.settings);
-          setApplicants(list.applicants);
-          version.current = list.dataVersion;
+          const data = await api.staffBootstrap(token);
+          setPrograms(data.programs);
+          setSettings(data.settings);
+          setApplicants(data.applicants);
+          version.current = data.dataVersion;
         }
       } catch {
         // เน็ตสะดุดชั่วคราว รอรอบถัดไป ไม่ต้องรบกวนผู้ใช้

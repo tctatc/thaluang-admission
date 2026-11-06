@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, FileText, Megaphone, Paperclip, Pin, Printer, Search } from 'lucide-react';
 import { DEFAULT_SETTINGS, DOC_INFO, DOC_KINDS, type Announcement } from '@shared/model';
 import { bangkokDateParts, thaiLongDate } from '@shared/thai';
-import { api } from '../lib/api';
+import { useHome } from '../lib/publicData';
 import { usePublicConfig } from '../app/App';
 import { PublicDashboard } from './PublicDashboard';
 
@@ -96,9 +96,8 @@ const Dot = () => <span className="mt-2.5 size-2 shrink-0 rotate-45 bg-gold" ari
 
 /** ประกาศจากผู้ดูแล — ไม่มีประกาศก็ไม่แสดงส่วนนี้ ยาวเกิน 3 รายการให้กดดูเพิ่ม */
 function Announcements() {
-  const [list, setList] = useState<Announcement[]>([]);
+  const list: Announcement[] = useHome().home?.announcements ?? [];
   const [all, setAll] = useState(false);
-  useEffect(() => { api.announcements().then((r) => setList(r.announcements)).catch(() => setList([])); }, []);
   if (list.length === 0) return null;
   const shown = all ? list : list.slice(0, 3);
   return (

@@ -1,7 +1,8 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { Link, NavLink, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { BarChart3, ExternalLink, FlaskConical, Layers, LogOut, Megaphone, QrCode, Settings as SettingsIcon, Users } from 'lucide-react';
-import { api, apiMode, type PublicConfig } from '../lib/api';
+import { apiMode, type PublicConfig } from '../lib/api';
+import { useHome } from '../lib/publicData';
 import { cn, Loading } from '../components/ui';
 import { HomePage } from '../pages/HomePage';
 import { ApplyPage } from '../pages/ApplyPage';
@@ -39,16 +40,10 @@ export function App() {
   );
 }
 
-/** ค่าที่หน้าผู้สมัครทุกหน้าใช้ (ปีการศึกษา เปิด/ปิดรับ รายชื่อสาขา) โหลดครั้งเดียวตอนเปิดเว็บ */
-let configPromise: Promise<PublicConfig> | null = null;
+/** ค่าที่หน้าผู้สมัครทุกหน้าใช้ (ปีการศึกษา เปิด/ปิดรับ รายชื่อสาขา) มาจากชุดข้อมูลหน้าแรกชุดเดียว */
 export function usePublicConfig(): { config: PublicConfig | null; error: string } {
-  const [config, setConfig] = useState<PublicConfig | null>(null);
-  const [error, setError] = useState('');
-  useEffect(() => {
-    configPromise ??= api.config();
-    configPromise.then(setConfig).catch((cause: Error) => { configPromise = null; setError(cause.message); });
-  }, []);
-  return { config, error };
+  const { home, error } = useHome();
+  return { config: home?.config ?? null, error };
 }
 
 function DemoBanner() {
