@@ -167,6 +167,20 @@ export interface Program {
   track: Track;
   name: string;
   active: boolean;
+  /** แผนกวิชาที่สาขานี้สังกัด เช่น "ช่างยนต์" (ไม่ต้องมีคำว่า "แผนกวิชา") */
+  department: string;
+  /** จำนวนที่เปิดรับ (0 = ไม่จำกัด) */
+  quota: number;
+}
+
+export interface Announcement {
+  id: string;
+  title: string;
+  body: string;
+  pinned: boolean;
+  published: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Settings {
@@ -175,30 +189,40 @@ export interface Settings {
   applicationsOpen: boolean;
   /** รูปแบบรหัสนักศึกษา: {YY} {YYYY} {L} {PP} และ {NNN} (จำนวน N = จำนวนหลักเลขลำดับ) */
   studentIdPattern: string;
+  /** ข้อความหน้าแรก — ผู้ดูแลแก้เองได้ในหน้าตั้งค่าเนื้อหา */
+  heroTitle: string;
+  heroText: string;
+  /** รายละเอียดการรับสมัคร (กำหนดการ คุณสมบัติ) แสดงใต้ยอดผู้สมัคร ขึ้นบรรทัดใหม่ได้ */
+  details: string;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
   academicYear: 2570,
   applicationsOpen: true,
   studentIdPattern: '{YY}{L}{PP}{NNN}',
+  heroTitle: 'สมัครเรียน ปวช. และ ปวส. ที่วิทยาลัยเทคนิคท่าหลวงซิเมนต์ไทยอนุสรณ์',
+  heroText: 'กรอกใบสมัครบนเว็บ ระบบเติมข้อมูลลงใบสมัครฉบับจริงของวิทยาลัยให้ทันที พิมพ์ ลงชื่อ แล้วนำมายื่นได้เลย ไม่ต้องเขียนเอง',
+  details: '',
 };
+
+export const SETTING_TEXT_FIELDS = ['heroTitle', 'heroText', 'details'] as const;
 
 /** รายชื่อสาขาตัวอย่าง — วิทยาลัยแก้ได้ในชีต Programs (รหัส 2 หลักใช้ประกอบรหัสนักศึกษา) */
 export const SAMPLE_PROGRAMS: Program[] = [
-  { code: '01', track: 'pvc', name: 'ช่างยนต์', active: true },
-  { code: '02', track: 'pvc', name: 'ช่างกลโรงงาน', active: true },
-  { code: '03', track: 'pvc', name: 'ช่างเชื่อมโลหะ', active: true },
-  { code: '04', track: 'pvc', name: 'ช่างไฟฟ้ากำลัง', active: true },
-  { code: '05', track: 'pvc', name: 'ช่างอิเล็กทรอนิกส์', active: true },
-  { code: '06', track: 'pvc', name: 'การบัญชี', active: true },
-  { code: '07', track: 'pvc', name: 'เทคโนโลยีธุรกิจดิจิทัล', active: true },
-  { code: '11', track: 'pvs', name: 'เทคนิคเครื่องกล', active: true },
-  { code: '12', track: 'pvs', name: 'เทคนิคการผลิต', active: true },
-  { code: '13', track: 'pvs', name: 'ไฟฟ้า', active: true },
-  { code: '14', track: 'pvs', name: 'อิเล็กทรอนิกส์', active: true },
-  { code: '15', track: 'pvs', name: 'เมคคาทรอนิกส์และหุ่นยนต์', active: true },
-  { code: '16', track: 'pvs', name: 'การบัญชี', active: true },
-  { code: '17', track: 'pvs', name: 'เทคโนโลยีธุรกิจดิจิทัล', active: true },
+  { code: '01', track: 'pvc', name: 'ช่างยนต์', active: true, department: 'ช่างยนต์', quota: 40 },
+  { code: '02', track: 'pvc', name: 'ช่างกลโรงงาน', active: true, department: 'ช่างกลโรงงาน', quota: 40 },
+  { code: '03', track: 'pvc', name: 'ช่างเชื่อมโลหะ', active: true, department: 'ช่างเชื่อมโลหะ', quota: 30 },
+  { code: '04', track: 'pvc', name: 'ช่างไฟฟ้ากำลัง', active: true, department: 'ช่างไฟฟ้ากำลัง', quota: 40 },
+  { code: '05', track: 'pvc', name: 'ช่างอิเล็กทรอนิกส์', active: true, department: 'อิเล็กทรอนิกส์', quota: 30 },
+  { code: '06', track: 'pvc', name: 'การบัญชี', active: true, department: 'บริหารธุรกิจ', quota: 40 },
+  { code: '07', track: 'pvc', name: 'เทคโนโลยีธุรกิจดิจิทัล', active: true, department: 'บริหารธุรกิจ', quota: 40 },
+  { code: '11', track: 'pvs', name: 'เทคนิคเครื่องกล', active: true, department: 'ช่างยนต์', quota: 20 },
+  { code: '12', track: 'pvs', name: 'เทคนิคการผลิต', active: true, department: 'ช่างกลโรงงาน', quota: 20 },
+  { code: '13', track: 'pvs', name: 'ไฟฟ้า', active: true, department: 'ช่างไฟฟ้ากำลัง', quota: 20 },
+  { code: '14', track: 'pvs', name: 'อิเล็กทรอนิกส์', active: true, department: 'อิเล็กทรอนิกส์', quota: 20 },
+  { code: '15', track: 'pvs', name: 'เมคคาทรอนิกส์และหุ่นยนต์', active: true, department: 'อิเล็กทรอนิกส์', quota: 20 },
+  { code: '16', track: 'pvs', name: 'การบัญชี', active: true, department: 'บริหารธุรกิจ', quota: 20 },
+  { code: '17', track: 'pvs', name: 'เทคโนโลยีธุรกิจดิจิทัล', active: true, department: 'บริหารธุรกิจ', quota: 20 },
 ];
 
 export const fullName = (a: Pick<ApplicationInput, 'prefix' | 'firstName' | 'lastName'>): string =>

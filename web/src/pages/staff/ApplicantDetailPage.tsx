@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, Check, Eye, IdCard, Printer, X } from 'lucide-react';
+import { ArrowLeft, Check, Eye, IdCard, Pencil, Printer, X } from 'lucide-react';
 import {
   DOC_INFO, DOC_KINDS, DOC_STATE_LABEL, ENROLLMENT_FIELDS, LEVEL_LABEL, STATUSES, STATUS_LABEL, firstChoice, fullName, programName, trackOf,
   type Applicant, type DocKind, type Enrollment, type Level, type Status,
@@ -13,6 +13,7 @@ import { base64ToBlob, formatBytes } from '../../lib/files';
 import { ApplicationSheet } from '../../sheets/ApplicationSheet';
 import { EnrollmentSheet } from '../../sheets/EnrollmentSheet';
 import { ScaledSheet } from '../../sheets/parts';
+import { EditApplicantPanel } from './EditApplicantPanel';
 
 export function ApplicantDetailPage() {
   const { id } = useParams();
@@ -20,6 +21,7 @@ export function ApplicantDetailPage() {
   const applicant = applicants.find((item) => item.id === id);
   const [photo, setPhoto] = useState('');
   const [sheet, setSheet] = useState<'application' | 'enrollment'>('application');
+  const [editing, setEditing] = useState(false);
   const photoId = applicant?.documents.photo?.fileId;
 
   useEffect(() => {
@@ -51,7 +53,8 @@ export function ApplicantDetailPage() {
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <div className="no-print space-y-5">
-          <Panel title="ข้อมูลผู้สมัคร">
+          {editing ? <EditApplicantPanel applicant={applicant} onDone={(next) => { if (next) replace(next); setEditing(false); }} /> : (
+          <Panel title="ข้อมูลผู้สมัคร" action={<Button variant="ghost" onClick={() => setEditing(true)} icon={<Pencil className="size-4" aria-hidden="true" />}>แก้ไขข้อมูล</Button>}>
             <dl className="grid gap-x-6 gap-y-2 text-[15px] sm:grid-cols-2">
               <Item label="ระดับที่สมัคร">{LEVEL_LABEL[applicant.level as Level]}</Item>
               <Item label="สาขาที่เลือก">{choices}</Item>
@@ -68,6 +71,7 @@ export function ApplicantDetailPage() {
               <Item label="แก้ไขล่าสุด">{thaiLongDate(parseIsoDate(bangkokDateKey(applicant.updatedAt))!)} โดย {applicant.updatedBy}</Item>
             </dl>
           </Panel>
+          )}
 
           <DocumentsPanel applicant={applicant} onChange={replace} />
           <StatusPanel applicant={applicant} onChange={replace} />

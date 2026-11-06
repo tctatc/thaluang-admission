@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Send } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Eye, EyeOff, QrCode, Send } from 'lucide-react';
 import {
   CHANNELS, CURRENT_LEVELS, LEVELS, LEVEL_LABEL, PREFIXES, emptyInput, trackOf,
   type ApplicationInput, type Level,
@@ -38,6 +38,17 @@ export function ApplyPage() {
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => { writeStore('session', DRAFT_KEY, JSON.stringify(input)); }, [input]);
+
+  // มาจาก QR รายสาขา (#/apply?p=pvc:01): เลือกสาขาให้เลย — ปวส. มีสองประเภท ผู้สมัครต้องเลือกประเภทเอง
+  const [params] = useSearchParams();
+  const fromQr = params.get('p') ?? '';
+  useEffect(() => {
+    const [track, code] = fromQr.split(':');
+    if (!code || (track !== 'pvc' && track !== 'pvs')) return;
+    setInput((current) => track === 'pvc'
+      ? { ...current, level: 'pvc', programPvc1: code, programPvs: '' }
+      : { ...current, level: current.level === 'pvc' ? '' : current.level, programPvs: code, programPvc1: '', programPvc2: '' });
+  }, [fromQr]);
 
   const programs = config?.programs ?? [];
   const track = LEVELS.includes(input.level as Level) ? trackOf(input.level as Level) : null;
@@ -101,6 +112,8 @@ export function ApplyPage() {
     }
   };
 
+  const [qrTrack, qrCode] = fromQr.split(':');
+  const qrProgram = programs.find((p) => p.track === qrTrack && p.code === qrCode);
   const errorCount = Object.keys(errors).length;
   const preview = <ApplicationSheet data={input} programs={programs} academicYear={config.academicYear} />;
 
@@ -110,6 +123,12 @@ export function ApplyPage() {
         <h1 className="text-2xl font-bold text-brand-deep sm:text-3xl">ใบสมัครเข้ารับคัดเลือก (โควตา) ปีการศึกษา {config.academicYear}</h1>
         <p className="mt-2 text-ink-muted">หัวข้อเรียงตามข้อในใบสมัครกระดาษ กรอกแล้วข้อมูลขึ้นในใบสมัครทันที ช่องที่มี <span className="text-brand">*</span> ต้องกรอก</p>
       </div>
+      {qrProgram && (
+        <p className="mt-4 inline-flex max-w-3xl items-center gap-2 rounded-control bg-gold-soft px-4 py-2 text-gold-ink">
+          <QrCode className="size-5 shrink-0" aria-hidden="true" />
+          สมัครสาขา {qrProgram.track === 'pvc' ? 'ปวช.' : 'ปวส.'} {qrProgram.name} (เลือกให้แล้วจาก QR Code เปลี่ยนได้ในข้อ ๖)
+        </p>
+      )}
       {submitError && <Alert tone="danger" title="ส่งใบสมัครไม่สำเร็จ" className="mt-5 max-w-3xl">{submitError}</Alert>}
 
       <div className="mt-6 grid items-start gap-8 xl:grid-cols-[minmax(0,1fr)_540px]">

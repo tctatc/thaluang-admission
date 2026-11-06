@@ -93,7 +93,30 @@ function sheetRepo_() {
 /* ---------- สาขาวิชาและค่าตั้งค่า ---------- */
 
 function readPrograms_() {
-  return Domain.parsePrograms(readRows_(Domain.SHEET_PROGRAMS).rows);
+  const data = readRows_(Domain.SHEET_PROGRAMS);
+  return Domain.parsePrograms(data.header, data.rows);
+}
+
+/** เขียนทับทั้งชีต (ชีตเล็ก ไม่กี่สิบแถว) — หัวตารางเขียนใหม่ด้วย ชีตรุ่นแรกจึงได้คอลัมน์ใหม่ไปในตัว */
+function rewriteSheet_(name, header, rows) {
+  const sheet = getSheet_(name);
+  const last = sheet.getLastRow();
+  if (last > 1) sheet.getRange(2, 1, last - 1, Math.max(sheet.getLastColumn(), header.length)).clearContent();
+  sheet.getRange(1, 1, 1, header.length).setValues([header]).setFontWeight('bold');
+  if (rows.length > 0) sheet.getRange(2, 1, rows.length, header.length).setNumberFormat('@').setValues(rows);
+}
+
+function writePrograms_(programs) {
+  rewriteSheet_(Domain.SHEET_PROGRAMS, Domain.PROGRAM_COLUMNS.slice(), programs.map(Domain.programToRow));
+}
+
+function readAnnouncements_() {
+  const data = readRows_(Domain.SHEET_ANNOUNCEMENTS);
+  return Domain.parseAnnouncements(data.header, data.rows);
+}
+
+function writeAnnouncements_(list) {
+  rewriteSheet_(Domain.SHEET_ANNOUNCEMENTS, Domain.ANNOUNCEMENT_COLUMNS.slice(), list.map(Domain.announcementToRow));
 }
 
 function readSettings_() {

@@ -3,7 +3,7 @@ import {
   type ApplicationInput, type Enrollment, type Level, type Program,
 } from './model';
 import { PROVINCES } from './provinces';
-import { ageOn, parseIsoDate, type DateParts } from './thai';
+import { ageOn, parseIsoDate, toArabicDigits, type DateParts } from './thai';
 
 export interface Issue { field: string; message: string }
 
@@ -21,8 +21,9 @@ const MAX_TEXT = 120;
 // อักขระควบคุมไม่ควรมีในชื่อหรือที่อยู่ — ตัดทิ้งก่อนเก็บลงชีต
 const CONTROL_CHARS = /[\u0000-\u001f\u007f]/g;
 
+/** ตัดอักขระควบคุม/ช่องว่างซ้อน และแปลงเลขไทยเป็นอารบิก (คนที่ตั้งแป้นภาษาไทยมักพิมพ์ ๐๘๑... มา) */
 const clean = (value: unknown): string =>
-  typeof value === 'string' ? value.replace(CONTROL_CHARS, ' ').replace(/\s+/g, ' ').trim().slice(0, MAX_TEXT) : '';
+  typeof value === 'string' ? toArabicDigits(value.replace(CONTROL_CHARS, ' ').replace(/\s+/g, ' ').trim()).slice(0, MAX_TEXT) : '';
 
 const digitsOnly = (value: string): string => value.replace(/\D/g, '');
 

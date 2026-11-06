@@ -9,12 +9,13 @@ import {
   CHANNELS, CURRENT_LEVELS, DEFAULT_SETTINGS, DOC_INFO, DOC_KINDS, SAMPLE_PROGRAMS, STATUSES,
   type Applicant, type DocKind, type Settings,
 } from '@shared/model';
-import { checkStudentIdPattern } from '@shared/numbering';
 import { PROVINCES } from '@shared/provinces';
 import {
   assertCanAttach, assertDocKind, attachDocument, enroll, fail, findByCredentials, getApplicant, publicView,
-  reviewDocument, setStatus, submitApplication, type Ctx, type Repo,
+  reviewDocument, setStatus, submitApplication, updateApplicant, type Ctx, type Repo,
 } from '@shared/service';
+import { deleteAnnouncement, normalizePrograms, normalizeSettings, publicAnnouncements, saveAnnouncement } from '@shared/admin';
+import type { Announcement, Program } from '@shared/model';
 import { checkUpload } from '@shared/files';
 import { computePublicStats } from '@shared/stats';
 import type { Transport } from './api';
@@ -24,6 +25,8 @@ import { fileStore, readStore, writeStore } from './storage';
 const KEY_APPLICANTS = 'tla.demo.applicants.v1';
 const KEY_SETTINGS = 'tla.demo.settings.v1';
 const KEY_VERSION = 'tla.demo.version.v1';
+const KEY_PROGRAMS = 'tla.demo.programs.v2';
+const KEY_ANNOUNCEMENTS = 'tla.demo.announcements.v1';
 
 /** บัญชีเจ้าหน้าที่ของโหมดสาธิต (หน้าเข้าสู่ระบบแสดงไว้ให้) */
 export const DEMO_STAFF = [
@@ -52,8 +55,17 @@ function repo(): Repo {
 }
 
 const settings = (): Settings => ({ ...DEFAULT_SETTINGS, ...load<Partial<Settings>>(KEY_SETTINGS, {}) });
+const programs = (): Program[] => load<Program[]>(KEY_PROGRAMS, SAMPLE_PROGRAMS);
+const announcements = (): Announcement[] => load<Announcement[]>(KEY_ANNOUNCEMENTS, [{
+  id: 'demo-1', title: 'เปิดรับสมัครนักเรียน นักศึกษา รอบโควตา', body: 'สมัครออนไลน์ได้ตลอด 24 ชั่วโมง กรอกใบสมัครแล้วพิมพ์นำมายื่นพร้อมเอกสาร\nสอบถามงานรับสมัคร ในวันและเวลาราชการ',
+  pinned: true, published: true, createdAt: '2026-11-01T02:00:00.000Z', updatedAt: '2026-11-01T02:00:00.000Z',
+}]);
 const bump = () => save(KEY_VERSION, load<number>(KEY_VERSION, 0) + 1);
 const ctx = (actor: string): Ctx => ({ nowIso: new Date().toISOString(), newId: () => `app_${crypto.randomUUID().slice(0, 16)}`, actor });
+
+function requireAdmin(token: string) {
+  if (staffFromToken(token).role !== 'admin') fail('FORBIDDEN', 'เฉพาะผู้ดูแลระบบ');
+}
 
 function staffFromToken(token: string) {
   const staff = DEMO_STAFF.find((item) => `demo:${item.username}` === token);
@@ -71,14 +83,17 @@ type Handler = (payload: Record<string, unknown>, token: string) => unknown;
 const handlers: Record<string, Handler> = {
   config: () => {
     const current = settings();
-    return { academicYear: current.academicYear, applicationsOpen: current.applicationsOpen, programs: SAMPLE_PROGRAMS.filter((p) => p.active) };
+    return {
+      academicYear: current.academicYear, applicationsOpen: current.applicationsOpen, programs: programs().filter((p) => p.active),
+      siteText: { heroTitle: current.heroTitle, heroText: current.heroText, details: current.details },
+    };
   },
   submitApplication: (payload) => {
-    const applicant = submitApplication(repo(), settings(), SAMPLE_PROGRAMS, payload, ctx('ผู้สมัคร'));
+    const applicant = submitApplication(repo(), settings(), programs(), payload, ctx('ผู้สมัคร'));
     bump();
     return { applicant: publicView(applicant) };
   },
-  publicStats: () => computePublicStats(repo().list(), SAMPLE_PROGRAMS, settings().academicYear, new Date().toISOString()),
+  publicStats: () => computePublicStats(repo().list(), programs(), settings().academicYear, new Date().toISOString()),
   lookup: async (payload) => {
     const applicant = findByCredentials(repo(), payload.nationalId, payload.birthDate);
     if (!applicant) fail('NOT_FOUND', 'ไม่พบใบสมัคร ตรวจเลขบัตรประชาชนและวันเกิดให้ตรงกับที่กรอกตอนสมัคร');
@@ -108,7 +123,7 @@ const handlers: Record<string, Handler> = {
   },
   me: (_payload, token) => {
     const staff = staffFromToken(token);
-    return { staff: { username: staff.username, displayName: staff.displayName, role: staff.role }, settings: settings(), programs: SAMPLE_PROGRAMS, dataVersion: load(KEY_VERSION, 0) };
+    return { staff: { username: staff.username, displayName: staff.displayName, role: staff.role }, settings: settings(), programs: programs(), dataVersion: load(KEY_VERSION, 0) };
   },
   applicants: (_payload, token) => {
     staffFromToken(token);
@@ -136,20 +151,44 @@ const handlers: Record<string, Handler> = {
   },
   enroll: (payload, token) => {
     const staff = staffFromToken(token);
-    const applicant = enroll(repo(), settings(), SAMPLE_PROGRAMS, String(payload.id), payload.enrollment, ctx(staff.username));
+    const applicant = enroll(repo(), settings(), programs(), String(payload.id), payload.enrollment, ctx(staff.username));
     bump();
     return { applicant };
   },
   saveSettings: (payload, token) => {
-    if (staffFromToken(token).role !== 'admin') fail('FORBIDDEN', 'เฉพาะผู้ดูแลระบบ');
-    const pattern = String(payload.studentIdPattern ?? '').trim();
-    const problem = checkStudentIdPattern(pattern);
-    if (problem) fail('VALIDATION', problem, [{ field: 'studentIdPattern', message: problem }]);
-    const year = Number(payload.academicYear);
-    if (!Number.isInteger(year) || year < 2560 || year > 2700) fail('VALIDATION', 'ปีการศึกษาไม่ถูกต้อง', [{ field: 'academicYear', message: 'ใส่ปี พ.ศ. เช่น 2570' }]);
-    save(KEY_SETTINGS, { academicYear: year, applicationsOpen: Boolean(payload.applicationsOpen), studentIdPattern: pattern });
+    requireAdmin(token);
+    save(KEY_SETTINGS, normalizeSettings(payload));
     bump();
     return { settings: settings() };
+  },
+  savePrograms: (payload, token) => {
+    requireAdmin(token);
+    const next = normalizePrograms(payload.programs, repo().list());
+    save(KEY_PROGRAMS, next);
+    bump();
+    return { programs: next };
+  },
+  announcements: () => ({ announcements: publicAnnouncements(announcements()) }),
+  adminAnnouncements: (_payload, token) => { staffFromToken(token); return { announcements: announcements() }; },
+  saveAnnouncement: (payload, token) => {
+    requireAdmin(token);
+    const next = saveAnnouncement(announcements(), payload, { nowIso: new Date().toISOString(), newId: () => `ann_${crypto.randomUUID().slice(0, 12)}` });
+    save(KEY_ANNOUNCEMENTS, next);
+    bump();
+    return { announcements: next };
+  },
+  deleteAnnouncement: (payload, token) => {
+    requireAdmin(token);
+    const next = deleteAnnouncement(announcements(), payload.id);
+    save(KEY_ANNOUNCEMENTS, next);
+    bump();
+    return { announcements: next };
+  },
+  updateApplicant: (payload, token) => {
+    const staff = staffFromToken(token);
+    const applicant = updateApplicant(repo(), programs(), String(payload.id), payload.applicant, ctx(staff.username));
+    bump();
+    return { applicant };
   },
   seedDemo: (_payload, token) => {
     staffFromToken(token);
@@ -204,14 +243,14 @@ function seed(): number {
   let added = 0;
   for (let i = 0; i < 36; i += 1) {
     const level = Math.random() < 0.6 ? 'pvc' : pick(['pvs_direct', 'pvs_cross'] as const);
-    const pvc = SAMPLE_PROGRAMS.filter((p) => p.track === 'pvc');
+    const pvc = programs().filter((p) => p.track === 'pvc');
     const first = pick(pvc).code;
     const [school, schoolProvince] = pick(SCHOOLS);
     const male = Math.random() < 0.65;
     const daysAgo = Math.floor(Math.random() * 24);
     const created = new Date(Date.now() - daysAgo * 86_400_000 - Math.random() * 36_000_000).toISOString();
     try {
-      const applicant = submitApplication(store, { ...settings(), applicationsOpen: true }, SAMPLE_PROGRAMS, {
+      const applicant = submitApplication(store, { ...settings(), applicationsOpen: true }, programs(), {
         level, prefix: male ? 'นาย' : 'นางสาว', firstName: pick(FIRST), lastName: pick(LAST), nationalId: fakeThaiId(),
         birthDate: `${level === 'pvc' ? 2011 : 2008}-0${1 + Math.floor(Math.random() * 9)}-1${Math.floor(Math.random() * 9)}`,
         phone: `08${Math.floor(10_000_000 + Math.random() * 89_999_999)}`, email: '',
@@ -221,7 +260,7 @@ function seed(): number {
         subdistrict: 'ตาลเดี่ยว', district: 'แก่งคอย', province: Math.random() < 0.75 ? 'สระบุรี' : pick(PROVINCES), postcode: '18110',
         currentLevel: level === 'pvc' ? 'ม.3' : pick(CURRENT_LEVELS.slice(1, 3)), schoolName: school, schoolAddressNo: '', schoolSubdistrict: '', schoolDistrict: '', schoolProvince,
         gpa: (2 + Math.random() * 2).toFixed(2), currentMajor: '',
-        programPvs: pick(SAMPLE_PROGRAMS.filter((p) => p.track === 'pvs')).code, programPvc1: first,
+        programPvs: pick(programs().filter((p) => p.track === 'pvs')).code, programPvc1: first,
         programPvc2: pick(pvc.filter((p) => p.code !== first)).code, channel: pick(CHANNELS), referrer: '', consent: 'yes',
       }, { nowIso: created, newId: () => `app_${crypto.randomUUID().slice(0, 16)}`, actor: 'ข้อมูลตัวอย่าง' });
       const documents: Applicant['documents'] = {};

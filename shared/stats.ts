@@ -14,6 +14,9 @@ export interface Stats {
   bySchool: Count[];
   byProvince: Count[];
   byChannel: Count[];
+  byDepartment: Count[];
+  /** จำนวนรับเทียบผู้สมัครรายสาขา (นับสาขาอันดับ 1) */
+  quota: ProgramCount[];
   /** จำนวนผู้สมัครรายวัน 30 วันล่าสุด (เก่าไปใหม่) */
   daily: { date: string; value: number }[];
 }
@@ -57,13 +60,18 @@ export function computeStats(all: readonly Applicant[], programs: readonly Progr
     bySchool: tally(list.map((item) => item.schoolName), 10),
     byProvince: tally(list.map((item) => item.province), 10),
     byChannel: tally(list.map((item) => item.channel)),
+    byDepartment: tally(list.map((item) => {
+      const track = item.level === 'pvc' ? 'pvc' : 'pvs';
+      return programs.find((p) => p.track === track && p.code === firstChoice(item))?.department ?? '';
+    }).filter(Boolean).map((name) => `แผนกวิชา${name}`)),
+    quota: computePublicStats(all, programs, academicYear, nowIso).years.find((y) => y.year === academicYear)?.programs ?? [],
     daily,
   };
 }
 
 /* ---------- ยอดสรุปสำหรับหน้าแรก (สาธารณะ) ---------- */
 
-export interface ProgramCount { track: 'pvc' | 'pvs'; code: string; name: string; value: number }
+export interface ProgramCount { track: 'pvc' | 'pvs'; code: string; name: string; department: string; quota: number; value: number }
 export interface YearSummary { year: number; total: number; pvc: number; pvs: number; programs: ProgramCount[] }
 export interface PublicStats { years: YearSummary[]; updatedAt: string }
 
@@ -80,14 +88,15 @@ export function computePublicStats(all: readonly Applicant[], programs: readonly
       const list = all.filter((item) => item.academicYear === year);
       const counts = new Map<string, ProgramCount>();
       for (const program of programs) {
-        if (program.active) counts.set(`${program.track}:${program.code}`, { track: program.track, code: program.code, name: program.name, value: 0 });
+        if (program.active) counts.set(`${program.track}:${program.code}`, { track: program.track, code: program.code, name: program.name, department: program.department, quota: program.quota, value: 0 });
       }
       for (const item of list) {
         const track = item.level === 'pvc' ? 'pvc' : 'pvs';
         const code = firstChoice(item);
         if (!code) continue;
         const key = `${track}:${code}`;
-        const entry = counts.get(key) ?? { track, code, name: programName(programs.filter((p) => p.track === track), code) || `สาขารหัส ${code}`, value: 0 } as ProgramCount;
+        const known = programs.find((p) => p.track === track && p.code === code);
+        const entry = counts.get(key) ?? { track, code, name: known?.name || `สาขารหัส ${code}`, department: known?.department ?? '', quota: known?.quota ?? 0, value: 0 };
         entry.value += 1;
         counts.set(key, entry);
       }
@@ -101,4 +110,22 @@ export function computePublicStats(all: readonly Applicant[], programs: readonly
       };
     }),
   };
+}
+
+/** โรงเรียนเดิมของผู้สมัครแต่ละสาขา (นับสาขาอันดับ 1) เรียงจากมากไปน้อย */
+export function schoolsByProgram(all: readonly Applicant[], programs: readonly Program[], academicYear: number): { key: string; label: string; total: number; schools: Count[] }[] {
+  const groups = new Map<string, string[]>();
+  for (const item of all) {
+    if (item.academicYear !== academicYear) continue;
+    const track = item.level === 'pvc' ? 'pvc' : 'pvs';
+    const key = `${track}:${firstChoice(item)}`;
+    groups.set(key, [...(groups.get(key) ?? []), item.schoolName]);
+  }
+  return [...groups.entries()]
+    .map(([key, schools]) => {
+      const [track, code] = key.split(':') as ['pvc' | 'pvs', string];
+      const name = programs.find((p) => p.track === track && p.code === code)?.name ?? `รหัส ${code}`;
+      return { key, label: `${track === 'pvc' ? 'ปวช.' : 'ปวส.'} ${name}`, total: schools.length, schools: tally(schools) };
+    })
+    .sort((a, b) => b.total - a.total || a.label.localeCompare(b.label, 'th'));
 }

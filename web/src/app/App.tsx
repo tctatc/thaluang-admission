@@ -1,16 +1,20 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Link, NavLink, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
-import { BarChart3, ExternalLink, FlaskConical, LogOut, Settings as SettingsIcon, Users } from 'lucide-react';
+import { BarChart3, ExternalLink, FlaskConical, Layers, LogOut, Megaphone, QrCode, Settings as SettingsIcon, Users } from 'lucide-react';
 import { api, apiMode, type PublicConfig } from '../lib/api';
 import { cn, Loading } from '../components/ui';
 import { HomePage } from '../pages/HomePage';
 import { ApplyPage } from '../pages/ApplyPage';
 import { StatusPage } from '../pages/StatusPage';
 import { LoginPage } from '../pages/staff/LoginPage';
-import { DashboardPage } from '../pages/staff/DashboardPage';
-import { ApplicantsPage } from '../pages/staff/ApplicantsPage';
-import { ApplicantDetailPage } from '../pages/staff/ApplicantDetailPage';
-import { SettingsPage } from '../pages/staff/SettingsPage';
+// หน้าเจ้าหน้าที่ (และไลบรารี QR) โหลดเมื่อเปิดใช้จริง ผู้สมัครบนมือถือจึงไม่ต้องดาวน์โหลดโค้ดส่วนนี้
+const DashboardPage = lazy(() => import('../pages/staff/DashboardPage').then((m) => ({ default: m.DashboardPage })));
+const ApplicantsPage = lazy(() => import('../pages/staff/ApplicantsPage').then((m) => ({ default: m.ApplicantsPage })));
+const ApplicantDetailPage = lazy(() => import('../pages/staff/ApplicantDetailPage').then((m) => ({ default: m.ApplicantDetailPage })));
+const SettingsPage = lazy(() => import('../pages/staff/SettingsPage').then((m) => ({ default: m.SettingsPage })));
+const ProgramsPage = lazy(() => import('../pages/staff/ProgramsPage').then((m) => ({ default: m.ProgramsPage })));
+const AnnouncementsPage = lazy(() => import('../pages/staff/AnnouncementsPage').then((m) => ({ default: m.AnnouncementsPage })));
+const QrPage = lazy(() => import('../pages/staff/QrPage').then((m) => ({ default: m.QrPage })));
 import { StaffProvider, useStaff } from './staff';
 
 export function App() {
@@ -22,10 +26,13 @@ export function App() {
         <Route path="status" element={<StatusPage />} />
       </Route>
       <Route path="staff" element={<StaffProvider><StaffLayout /></StaffProvider>}>
-        <Route index element={<DashboardPage />} />
-        <Route path="applicants" element={<ApplicantsPage />} />
-        <Route path="applicants/:id" element={<ApplicantDetailPage />} />
-        <Route path="settings" element={<SettingsPage />} />
+        <Route index element={<Suspense fallback={<Loading />}><DashboardPage /></Suspense>} />
+        <Route path="applicants" element={<Suspense fallback={<Loading />}><ApplicantsPage /></Suspense>} />
+        <Route path="applicants/:id" element={<Suspense fallback={<Loading />}><ApplicantDetailPage /></Suspense>} />
+        <Route path="settings" element={<Suspense fallback={<Loading />}><SettingsPage /></Suspense>} />
+        <Route path="programs" element={<Suspense fallback={<Loading />}><ProgramsPage /></Suspense>} />
+        <Route path="announcements" element={<Suspense fallback={<Loading />}><AnnouncementsPage /></Suspense>} />
+        <Route path="qr" element={<Suspense fallback={<Loading />}><QrPage /></Suspense>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
@@ -115,7 +122,14 @@ function StaffLayout() {
           <nav aria-label="เมนูเจ้าหน้าที่" className="flex flex-1 flex-wrap gap-1">
             <NavLink end to="/staff" className={link}><BarChart3 className="size-4" aria-hidden="true" />ภาพรวม</NavLink>
             <NavLink to="/staff/applicants" className={link}><Users className="size-4" aria-hidden="true" />ผู้สมัคร</NavLink>
-            {staff.role === 'admin' && <NavLink to="/staff/settings" className={link}><SettingsIcon className="size-4" aria-hidden="true" />ตั้งค่า</NavLink>}
+            <NavLink to="/staff/qr" className={link}><QrCode className="size-4" aria-hidden="true" />QR Code</NavLink>
+            {staff.role === 'admin' && (
+              <>
+                <NavLink to="/staff/programs" className={link}><Layers className="size-4" aria-hidden="true" />แผนก/สาขา</NavLink>
+                <NavLink to="/staff/announcements" className={link}><Megaphone className="size-4" aria-hidden="true" />ประกาศ</NavLink>
+                <NavLink to="/staff/settings" className={link}><SettingsIcon className="size-4" aria-hidden="true" />ตั้งค่า</NavLink>
+              </>
+            )}
           </nav>
           <div className="flex items-center gap-2 text-sm">
             <Link to="/" className="inline-flex min-h-11 items-center gap-1.5 rounded-control px-3 text-ink-inverse/80 hover:bg-ink-inverse/10 hover:text-ink-inverse">

@@ -6,8 +6,8 @@
  */
 
 import {
-  DEFAULT_SETTINGS, INPUT_FIELDS, STATUSES,
-  type Applicant, type Program, type Settings, type Status, type Track,
+  DEFAULT_SETTINGS, INPUT_FIELDS, SETTING_TEXT_FIELDS, STATUSES,
+  type Announcement, type Applicant, type Program, type Settings, type Status, type Track,
 } from './model';
 import { checkStudentIdPattern } from './numbering';
 
@@ -16,6 +16,8 @@ export const SHEET_PROGRAMS = 'Programs';
 export const SHEET_SETTINGS = 'Settings';
 export const SHEET_STAFF = 'Staff';
 export const SHEET_AUDIT = 'Audit';
+export const SHEET_ANNOUNCEMENTS = 'Announcements';
+export const SHEET_BACKUP_FOLDER = 'สำรองข้อมูลอัตโนมัติ';
 
 export const APPLICANT_COLUMNS = [
   'id', 'appNo', 'academicYear', 'status', 'statusNote', 'studentId',
@@ -23,7 +25,8 @@ export const APPLICANT_COLUMNS = [
   'documentsJson', 'enrollmentJson', 'createdAt', 'updatedAt', 'updatedBy',
 ] as const;
 
-export const PROGRAM_COLUMNS = ['code', 'track', 'name', 'active'] as const;
+export const PROGRAM_COLUMNS = ['code', 'track', 'name', 'active', 'department', 'quota'] as const;
+export const ANNOUNCEMENT_COLUMNS = ['id', 'title', 'body', 'pinned', 'published', 'createdAt', 'updatedAt'] as const;
 export const SETTINGS_COLUMNS = ['key', 'value', 'description'] as const;
 export const STAFF_COLUMNS = ['username', 'displayName', 'role', 'status', 'passwordSalt', 'passwordHash', 'tokenVersion', 'lastLoginAt'] as const;
 export const AUDIT_COLUMNS = ['at', 'actor', 'action', 'target', 'detail'] as const;
@@ -67,15 +70,48 @@ export function missingColumns(header: readonly unknown[], required: readonly st
 
 const truthy = (value: unknown) => value === true || /^(true|1|yes|ใช่|เปิด)$/i.test(String(value).trim());
 
-export function parsePrograms(rows: readonly (readonly unknown[])[]): Program[] {
+/** อ่านชีต Programs ด้วยชื่อหัวคอลัมน์ (ชีตรุ่นแรกไม่มี department/quota ก็ยังอ่านได้) */
+export function parsePrograms(header: readonly unknown[], rows: readonly (readonly unknown[])[]): Program[] {
+  const col = (row: readonly unknown[], name: string) => {
+    const index = header.indexOf(name);
+    return index === -1 ? '' : String(row[index] ?? '').trim();
+  };
+  return rows
+    .map((row) => {
+      const name = col(row, 'name');
+      const quota = Number(col(row, 'quota'));
+      return {
+        code: col(row, 'code'),
+        track: col(row, 'track').toLowerCase() as Track,
+        name,
+        active: truthy(col(row, 'active')),
+        department: col(row, 'department') || name,
+        quota: Number.isInteger(quota) && quota > 0 ? quota : 0,
+      };
+    })
+    .filter((program) => /^[0-9A-Za-z]{1,4}$/.test(program.code) && (program.track === 'pvc' || program.track === 'pvs') && program.name !== '');
+}
+
+export function programToRow(program: Program): string[] {
+  return [program.code, program.track, program.name, program.active ? 'TRUE' : 'FALSE', program.department, String(program.quota)];
+}
+
+export function parseAnnouncements(header: readonly unknown[], rows: readonly (readonly unknown[])[]): Announcement[] {
+  const col = (row: readonly unknown[], name: string) => {
+    const index = header.indexOf(name);
+    return index === -1 ? '' : String(row[index] ?? '');
+  };
   return rows
     .map((row) => ({
-      code: String(row[0] ?? '').trim(),
-      track: String(row[1] ?? '').trim().toLowerCase() as Track,
-      name: String(row[2] ?? '').trim(),
-      active: truthy(row[3]),
+      id: col(row, 'id'), title: col(row, 'title'), body: col(row, 'body'),
+      pinned: truthy(col(row, 'pinned')), published: truthy(col(row, 'published')),
+      createdAt: col(row, 'createdAt'), updatedAt: col(row, 'updatedAt'),
     }))
-    .filter((program) => /^[0-9A-Za-z]{1,4}$/.test(program.code) && (program.track === 'pvc' || program.track === 'pvs') && program.name !== '');
+    .filter((item) => item.id !== '' && item.title !== '');
+}
+
+export function announcementToRow(item: Announcement): string[] {
+  return [item.id, item.title, item.body, item.pinned ? 'TRUE' : 'FALSE', item.published ? 'TRUE' : 'FALSE', item.createdAt, item.updatedAt];
 }
 
 /** อ่านค่าตั้งค่าจากชีต — ค่าที่ผิดรูปใช้ค่าเริ่มต้นแทน และรายงานปัญหากลับไปให้ log */
@@ -95,6 +131,10 @@ export function parseSettings(rows: readonly (readonly unknown[])[]): { settings
     const problem = checkStudentIdPattern(pattern);
     if (problem) problems.push(`studentIdPattern: ${problem}`);
     else settings.studentIdPattern = pattern;
+  }
+  for (const field of SETTING_TEXT_FIELDS) {
+    const value = String(map.get(field) ?? '').trim();
+    if (value) settings[field] = value;
   }
   return { settings, problems };
 }

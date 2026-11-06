@@ -6,14 +6,14 @@ import { cn } from '../components/ui';
 import { api } from '../lib/api';
 import { CountUp, useAnimatedNumber } from '../lib/useAnimatedNumber';
 
-const POLL_MS = 30_000;
+const POLL_MS = 15_000;
 const COLOR = { brand: 'var(--color-brand)', gold: 'var(--color-gold)', deep: 'var(--color-brand-deep)' };
 type Filter = 'all' | 'pvc' | 'pvs';
 const TRACK_SHORT = { pvc: 'ปวช.', pvs: 'ปวส.' } as const;
 
 /**
  * ยอดผู้สมัครบนหน้าแรก — แสดงแค่ตัวเลขรวม ไม่มีข้อมูลรายคน
- * ถามเลขเวอร์ชันข้อมูลทุก 30 วินาที (เบามาก) และดึงยอดใหม่เมื่อมีคนสมัครเพิ่มเท่านั้น
+ * ถามเลขเวอร์ชันข้อมูลทุก 15 วินาที (เบามาก) และดึงยอดใหม่เมื่อมีคนสมัครเพิ่มเท่านั้น
  */
 export function PublicDashboard() {
   const [stats, setStats] = useState<PublicStats | null>(null);
@@ -103,6 +103,9 @@ export function PublicDashboard() {
             </Card>
           </>
         )}
+        <Card title="จำนวนรับ และที่นั่งคงเหลือ" subtitle="นับผู้สมัครที่เลือกสาขาเป็นอันดับ 1 · อัปเดตเองทุก 15 วินาที">
+          <QuotaTable programs={summary.programs} />
+        </Card>
       </div>
     </section>
   );
@@ -304,5 +307,57 @@ function Ranking({ programs }: { programs: ProgramCount[] }) {
         );
       })}
     </ol>
+  );
+}
+
+/** ตารางจำนวนรับ/สมัครแล้ว/คงเหลือ แยกตามแผนกวิชา — ใกล้เต็มและเต็มแล้วมีป้ายบอก ไม่ใช้สีอย่างเดียว */
+export function QuotaTable({ programs }: { programs: ProgramCount[] }) {
+  const departments = [...new Set(programs.map((p) => p.department || 'อื่น ๆ'))].sort((a, b) => a.localeCompare(b, 'th'));
+  if (programs.length === 0) return <p className="py-6 text-center text-ink-muted">ยังไม่มีสาขาที่เปิดรับ</p>;
+  return (
+    <div className="-mx-5 overflow-x-auto sm:mx-0">
+      <table className="w-full min-w-[600px] text-left text-[15px]">
+        <thead className="border-b border-line text-sm text-ink-muted">
+          <tr>
+            <th className="px-5 py-2 font-medium sm:px-3">สาขาวิชา</th>
+            <th className="w-20 px-3 py-2 text-right font-medium">รับ</th>
+            <th className="w-24 px-3 py-2 text-right font-medium">สมัครแล้ว</th>
+            <th className="w-28 px-3 py-2 text-right font-medium">คงเหลือ</th>
+            <th className="w-40 px-3 py-2 font-medium"><span className="sr-only">สัดส่วน</span></th>
+          </tr>
+        </thead>
+        {departments.map((department) => (
+          <tbody key={department} className="divide-y divide-line">
+            <tr><th colSpan={5} className="bg-sunken px-5 py-2 text-sm font-semibold text-brand-deep sm:px-3">แผนกวิชา{department}</th></tr>
+            {programs.filter((p) => (p.department || 'อื่น ๆ') === department)
+              .sort((a, b) => a.track.localeCompare(b.track) || a.code.localeCompare(b.code))
+              .map((p) => {
+                const left = p.quota > 0 ? Math.max(0, p.quota - p.value) : null;
+                const ratio = p.quota > 0 ? Math.min(1, p.value / p.quota) : 0;
+                const state = p.quota === 0 ? 'open' : p.value >= p.quota ? 'full' : ratio >= 0.8 ? 'near' : 'open';
+                return (
+                  <tr key={`${p.track}${p.code}`}>
+                    <td className="px-5 py-2.5 sm:px-3"><span className="text-xs text-ink-muted">{TRACK_SHORT[p.track]}</span> {p.name}</td>
+                    <td className="px-3 py-2.5 text-right" data-numeric>{p.quota > 0 ? p.quota : 'ไม่จำกัด'}</td>
+                    <td className="px-3 py-2.5 text-right font-medium" data-numeric><CountUp value={p.value} /></td>
+                    <td className="px-3 py-2.5 text-right" data-numeric>
+                      {left === null ? '–' : state === 'full'
+                        ? <span className="rounded-full bg-danger-soft px-2 py-0.5 text-sm font-medium text-danger">เต็มแล้ว</span>
+                        : <span className={state === 'near' ? 'font-semibold text-warn' : 'font-semibold text-ok'}>{left}{state === 'near' ? ' (ใกล้เต็ม)' : ''}</span>}
+                    </td>
+                    <td className="px-3 py-2.5">
+                      {p.quota > 0 && (
+                        <div className="h-2.5 overflow-hidden rounded-full bg-sunken ring-1 ring-inset ring-line" aria-hidden="true">
+                          <div className={cn('grow-x h-full origin-left rounded-full', state === 'full' ? 'bg-danger' : state === 'near' ? 'bg-gold' : 'bg-ok')} style={{ transform: `scaleX(${ratio})` }} />
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+          </tbody>
+        ))}
+      </table>
+    </div>
   );
 }

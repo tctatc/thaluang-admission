@@ -12,6 +12,7 @@ const SHEET_LAYOUT_ = [
   ['SHEET_SETTINGS', 'SETTINGS_COLUMNS'],
   ['SHEET_STAFF', 'STAFF_COLUMNS'],
   ['SHEET_AUDIT', 'AUDIT_COLUMNS'],
+  ['SHEET_ANNOUNCEMENTS', 'ANNOUNCEMENT_COLUMNS'],
 ];
 
 function setupSystem() {
@@ -54,9 +55,10 @@ function setupSystem() {
 
   const programs = getSheet_(Domain.SHEET_PROGRAMS);
   if (programs.getLastRow() < 2) {
-    programs.getRange(2, 1, Domain.SAMPLE_PROGRAMS.length, 4).setValues(Domain.SAMPLE_PROGRAMS.map(function (p) {
-      return [p.code, p.track, p.name, p.active ? 'TRUE' : 'FALSE'];
-    }));
+    writePrograms_(Domain.SAMPLE_PROGRAMS);
+  } else {
+    // ชีตรุ่นแรกยังไม่มีแผนก/จำนวนรับ — เขียนใหม่ตามรูปแบบล่าสุด (แผนกเริ่มต้น = ชื่อสาขา แก้ต่อในหน้าเว็บได้)
+    writePrograms_(readPrograms_());
   }
   const settings = getSheet_(Domain.SHEET_SETTINGS);
   if (settings.getLastRow() < 2) {
@@ -68,6 +70,7 @@ function setupSystem() {
   }
 
   if (readStaff_().length === 0) createStaff_('admin', 'ผู้ดูแลระบบ', 'admin');
+  installBackupTrigger_();
   clearCaches_();
   console.log(`ไฟล์ข้อมูล: ${openBook_().getUrl()}`);
   console.log(`โฟลเดอร์เอกสาร: ${DriveApp.getFolderById(getProp_(PROP_DRIVE_FOLDER_ID)).getUrl()}`);
@@ -120,4 +123,31 @@ function resetStaffPassword() {
 /** ทดสอบส่ง LINE เข้ากลุ่มเจ้าหน้าที่หลังใส่ LINE_CHANNEL_TOKEN และ LINE_TO */
 function testLineNotify() {
   pushLine_('ทดสอบการแจ้งเตือนจากระบบรับสมัครเรียน');
+}
+
+/* ---------- สำรองข้อมูลอัตโนมัติ ---------- */
+
+const BACKUP_KEEP = 30;
+
+/** ตั้งให้ dailyBackup ทำงานทุกคืนราวตี 2 (รันซ้ำได้ ไม่สร้างซ้อน) */
+function installBackupTrigger_() {
+  const exists = ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === 'dailyBackup'; });
+  if (!exists) ScriptApp.newTrigger('dailyBackup').timeBased().everyDays(1).atHour(2).inTimezone('Asia/Bangkok').create();
+}
+
+/**
+ * คัดลอกไฟล์ข้อมูลทั้งไฟล์ไปเก็บในโฟลเดอร์สำรอง เก็บไว้ 30 ชุดล่าสุด ชุดที่เก่ากว่าย้ายลงถังขยะ
+ * ไฟล์แนบใน Drive ไม่ต้องสำรองซ้ำ เพราะระบบไม่ลบไฟล์เอง (ส่งไฟล์ใหม่ ไฟล์เก่าลงถังขยะ กู้ได้ 30 วัน)
+ */
+function dailyBackup() {
+  const root = DriveApp.getFolderById(requireProp_(PROP_DRIVE_FOLDER_ID));
+  const folder = childFolder_(root, Domain.SHEET_BACKUP_FOLDER);
+  const stamp = Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd HHmm');
+  DriveApp.getFileById(requireProp_(PROP_SPREADSHEET_ID)).makeCopy(`สำรอง ${stamp}`, folder);
+  const files = [];
+  const iterator = folder.getFiles();
+  while (iterator.hasNext()) files.push(iterator.next());
+  files.sort(function (a, b) { return b.getDateCreated().getTime() - a.getDateCreated().getTime(); });
+  files.slice(BACKUP_KEEP).forEach(function (file) { file.setTrashed(true); });
+  console.log(`สำรองข้อมูลแล้ว: สำรอง ${stamp} (เก็บไว้ ${Math.min(files.length, BACKUP_KEEP)} ชุด)`);
 }

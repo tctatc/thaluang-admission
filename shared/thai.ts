@@ -7,6 +7,11 @@ export const THAI_MONTHS = [
   'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม',
 ] as const;
 
+/** เลขไทย (๐-๙) เป็นเลขอารบิก — ระบบเก็บและแสดงตัวเลขเป็นอารบิกทั้งหมด */
+export function toArabicDigits(value: string): string {
+  return value.replace(/[๐-๙]/g, (digit) => String(THAI_DIGITS.indexOf(digit)));
+}
+
 export function toThaiDigits(value: string | number): string {
   return String(value).replace(/[0-9]/g, (digit) => THAI_DIGITS[Number(digit)]!);
 }

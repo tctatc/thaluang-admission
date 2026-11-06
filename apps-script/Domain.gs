@@ -21,6 +21,7 @@ var Domain = (() => {
   var index_exports = {};
   __export(index_exports, {
     ALLOWED_MIME: () => ALLOWED_MIME,
+    ANNOUNCEMENT_COLUMNS: () => ANNOUNCEMENT_COLUMNS,
     APPLICANT_COLUMNS: () => APPLICANT_COLUMNS,
     AUDIT_COLUMNS: () => AUDIT_COLUMNS,
     CHANNELS: () => CHANNELS,
@@ -41,8 +42,11 @@ var Domain = (() => {
     PROVINCES: () => PROVINCES,
     SAMPLE_PROGRAMS: () => SAMPLE_PROGRAMS,
     SETTINGS_COLUMNS: () => SETTINGS_COLUMNS,
+    SETTING_TEXT_FIELDS: () => SETTING_TEXT_FIELDS,
+    SHEET_ANNOUNCEMENTS: () => SHEET_ANNOUNCEMENTS,
     SHEET_APPLICANTS: () => SHEET_APPLICANTS,
     SHEET_AUDIT: () => SHEET_AUDIT,
+    SHEET_BACKUP_FOLDER: () => SHEET_BACKUP_FOLDER,
     SHEET_PROGRAMS: () => SHEET_PROGRAMS,
     SHEET_SETTINGS: () => SHEET_SETTINGS,
     SHEET_STAFF: () => SHEET_STAFF,
@@ -52,6 +56,7 @@ var Domain = (() => {
     THAI_MONTHS: () => THAI_MONTHS,
     TRACK_LABEL: () => TRACK_LABEL,
     ageOn: () => ageOn,
+    announcementToRow: () => announcementToRow,
     applicantToRow: () => applicantToRow,
     assertCanAttach: () => assertCanAttach,
     assertDocKind: () => assertDocKind,
@@ -62,8 +67,12 @@ var Domain = (() => {
     checkUpload: () => checkUpload,
     computePublicStats: () => computePublicStats,
     computeStats: () => computeStats,
+    countFirstChoice: () => countFirstChoice,
+    deleteAnnouncement: () => deleteAnnouncement,
+    departmentsOf: () => departmentsOf,
     emptyInput: () => emptyInput,
     enroll: () => enroll,
+    exportByProgram: () => exportByProgram,
     exportTable: () => exportTable,
     extensionFor: () => extensionFor,
     fail: () => fail,
@@ -79,20 +88,29 @@ var Domain = (() => {
     nextStudentId: () => nextStudentId,
     normalizeEnrollment: () => normalizeEnrollment,
     normalizeInput: () => normalizeInput,
+    normalizePrograms: () => normalizePrograms,
+    normalizeSettings: () => normalizeSettings,
+    parseAnnouncements: () => parseAnnouncements,
     parseIsoDate: () => parseIsoDate,
     parsePrograms: () => parsePrograms,
     parseSettings: () => parseSettings,
     programName: () => programName,
+    programToRow: () => programToRow,
+    publicAnnouncements: () => publicAnnouncements,
     publicView: () => publicView,
     reviewDocument: () => reviewDocument,
     rowToApplicant: () => rowToApplicant,
+    saveAnnouncement: () => saveAnnouncement,
+    schoolsByProgram: () => schoolsByProgram,
     setStatus: () => setStatus,
     sniffMime: () => sniffMime,
     submitApplication: () => submitApplication,
     thaiLongDate: () => thaiLongDate,
+    toArabicDigits: () => toArabicDigits,
     toCsv: () => toCsv,
     toThaiDigits: () => toThaiDigits,
     trackOf: () => trackOf,
+    updateApplicant: () => updateApplicant,
     validateApplication: () => validateApplication,
     validateEnrollment: () => validateEnrollment
   });
@@ -191,23 +209,27 @@ var Domain = (() => {
   var DEFAULT_SETTINGS = {
     academicYear: 2570,
     applicationsOpen: true,
-    studentIdPattern: "{YY}{L}{PP}{NNN}"
+    studentIdPattern: "{YY}{L}{PP}{NNN}",
+    heroTitle: "\u0E2A\u0E21\u0E31\u0E04\u0E23\u0E40\u0E23\u0E35\u0E22\u0E19 \u0E1B\u0E27\u0E0A. \u0E41\u0E25\u0E30 \u0E1B\u0E27\u0E2A. \u0E17\u0E35\u0E48\u0E27\u0E34\u0E17\u0E22\u0E32\u0E25\u0E31\u0E22\u0E40\u0E17\u0E04\u0E19\u0E34\u0E04\u0E17\u0E48\u0E32\u0E2B\u0E25\u0E27\u0E07\u0E0B\u0E34\u0E40\u0E21\u0E19\u0E15\u0E4C\u0E44\u0E17\u0E22\u0E2D\u0E19\u0E38\u0E2A\u0E23\u0E13\u0E4C",
+    heroText: "\u0E01\u0E23\u0E2D\u0E01\u0E43\u0E1A\u0E2A\u0E21\u0E31\u0E04\u0E23\u0E1A\u0E19\u0E40\u0E27\u0E47\u0E1A \u0E23\u0E30\u0E1A\u0E1A\u0E40\u0E15\u0E34\u0E21\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E25\u0E07\u0E43\u0E1A\u0E2A\u0E21\u0E31\u0E04\u0E23\u0E09\u0E1A\u0E31\u0E1A\u0E08\u0E23\u0E34\u0E07\u0E02\u0E2D\u0E07\u0E27\u0E34\u0E17\u0E22\u0E32\u0E25\u0E31\u0E22\u0E43\u0E2B\u0E49\u0E17\u0E31\u0E19\u0E17\u0E35 \u0E1E\u0E34\u0E21\u0E1E\u0E4C \u0E25\u0E07\u0E0A\u0E37\u0E48\u0E2D \u0E41\u0E25\u0E49\u0E27\u0E19\u0E33\u0E21\u0E32\u0E22\u0E37\u0E48\u0E19\u0E44\u0E14\u0E49\u0E40\u0E25\u0E22 \u0E44\u0E21\u0E48\u0E15\u0E49\u0E2D\u0E07\u0E40\u0E02\u0E35\u0E22\u0E19\u0E40\u0E2D\u0E07",
+    details: ""
   };
+  var SETTING_TEXT_FIELDS = ["heroTitle", "heroText", "details"];
   var SAMPLE_PROGRAMS = [
-    { code: "01", track: "pvc", name: "\u0E0A\u0E48\u0E32\u0E07\u0E22\u0E19\u0E15\u0E4C", active: true },
-    { code: "02", track: "pvc", name: "\u0E0A\u0E48\u0E32\u0E07\u0E01\u0E25\u0E42\u0E23\u0E07\u0E07\u0E32\u0E19", active: true },
-    { code: "03", track: "pvc", name: "\u0E0A\u0E48\u0E32\u0E07\u0E40\u0E0A\u0E37\u0E48\u0E2D\u0E21\u0E42\u0E25\u0E2B\u0E30", active: true },
-    { code: "04", track: "pvc", name: "\u0E0A\u0E48\u0E32\u0E07\u0E44\u0E1F\u0E1F\u0E49\u0E32\u0E01\u0E33\u0E25\u0E31\u0E07", active: true },
-    { code: "05", track: "pvc", name: "\u0E0A\u0E48\u0E32\u0E07\u0E2D\u0E34\u0E40\u0E25\u0E47\u0E01\u0E17\u0E23\u0E2D\u0E19\u0E34\u0E01\u0E2A\u0E4C", active: true },
-    { code: "06", track: "pvc", name: "\u0E01\u0E32\u0E23\u0E1A\u0E31\u0E0D\u0E0A\u0E35", active: true },
-    { code: "07", track: "pvc", name: "\u0E40\u0E17\u0E04\u0E42\u0E19\u0E42\u0E25\u0E22\u0E35\u0E18\u0E38\u0E23\u0E01\u0E34\u0E08\u0E14\u0E34\u0E08\u0E34\u0E17\u0E31\u0E25", active: true },
-    { code: "11", track: "pvs", name: "\u0E40\u0E17\u0E04\u0E19\u0E34\u0E04\u0E40\u0E04\u0E23\u0E37\u0E48\u0E2D\u0E07\u0E01\u0E25", active: true },
-    { code: "12", track: "pvs", name: "\u0E40\u0E17\u0E04\u0E19\u0E34\u0E04\u0E01\u0E32\u0E23\u0E1C\u0E25\u0E34\u0E15", active: true },
-    { code: "13", track: "pvs", name: "\u0E44\u0E1F\u0E1F\u0E49\u0E32", active: true },
-    { code: "14", track: "pvs", name: "\u0E2D\u0E34\u0E40\u0E25\u0E47\u0E01\u0E17\u0E23\u0E2D\u0E19\u0E34\u0E01\u0E2A\u0E4C", active: true },
-    { code: "15", track: "pvs", name: "\u0E40\u0E21\u0E04\u0E04\u0E32\u0E17\u0E23\u0E2D\u0E19\u0E34\u0E01\u0E2A\u0E4C\u0E41\u0E25\u0E30\u0E2B\u0E38\u0E48\u0E19\u0E22\u0E19\u0E15\u0E4C", active: true },
-    { code: "16", track: "pvs", name: "\u0E01\u0E32\u0E23\u0E1A\u0E31\u0E0D\u0E0A\u0E35", active: true },
-    { code: "17", track: "pvs", name: "\u0E40\u0E17\u0E04\u0E42\u0E19\u0E42\u0E25\u0E22\u0E35\u0E18\u0E38\u0E23\u0E01\u0E34\u0E08\u0E14\u0E34\u0E08\u0E34\u0E17\u0E31\u0E25", active: true }
+    { code: "01", track: "pvc", name: "\u0E0A\u0E48\u0E32\u0E07\u0E22\u0E19\u0E15\u0E4C", active: true, department: "\u0E0A\u0E48\u0E32\u0E07\u0E22\u0E19\u0E15\u0E4C", quota: 40 },
+    { code: "02", track: "pvc", name: "\u0E0A\u0E48\u0E32\u0E07\u0E01\u0E25\u0E42\u0E23\u0E07\u0E07\u0E32\u0E19", active: true, department: "\u0E0A\u0E48\u0E32\u0E07\u0E01\u0E25\u0E42\u0E23\u0E07\u0E07\u0E32\u0E19", quota: 40 },
+    { code: "03", track: "pvc", name: "\u0E0A\u0E48\u0E32\u0E07\u0E40\u0E0A\u0E37\u0E48\u0E2D\u0E21\u0E42\u0E25\u0E2B\u0E30", active: true, department: "\u0E0A\u0E48\u0E32\u0E07\u0E40\u0E0A\u0E37\u0E48\u0E2D\u0E21\u0E42\u0E25\u0E2B\u0E30", quota: 30 },
+    { code: "04", track: "pvc", name: "\u0E0A\u0E48\u0E32\u0E07\u0E44\u0E1F\u0E1F\u0E49\u0E32\u0E01\u0E33\u0E25\u0E31\u0E07", active: true, department: "\u0E0A\u0E48\u0E32\u0E07\u0E44\u0E1F\u0E1F\u0E49\u0E32\u0E01\u0E33\u0E25\u0E31\u0E07", quota: 40 },
+    { code: "05", track: "pvc", name: "\u0E0A\u0E48\u0E32\u0E07\u0E2D\u0E34\u0E40\u0E25\u0E47\u0E01\u0E17\u0E23\u0E2D\u0E19\u0E34\u0E01\u0E2A\u0E4C", active: true, department: "\u0E2D\u0E34\u0E40\u0E25\u0E47\u0E01\u0E17\u0E23\u0E2D\u0E19\u0E34\u0E01\u0E2A\u0E4C", quota: 30 },
+    { code: "06", track: "pvc", name: "\u0E01\u0E32\u0E23\u0E1A\u0E31\u0E0D\u0E0A\u0E35", active: true, department: "\u0E1A\u0E23\u0E34\u0E2B\u0E32\u0E23\u0E18\u0E38\u0E23\u0E01\u0E34\u0E08", quota: 40 },
+    { code: "07", track: "pvc", name: "\u0E40\u0E17\u0E04\u0E42\u0E19\u0E42\u0E25\u0E22\u0E35\u0E18\u0E38\u0E23\u0E01\u0E34\u0E08\u0E14\u0E34\u0E08\u0E34\u0E17\u0E31\u0E25", active: true, department: "\u0E1A\u0E23\u0E34\u0E2B\u0E32\u0E23\u0E18\u0E38\u0E23\u0E01\u0E34\u0E08", quota: 40 },
+    { code: "11", track: "pvs", name: "\u0E40\u0E17\u0E04\u0E19\u0E34\u0E04\u0E40\u0E04\u0E23\u0E37\u0E48\u0E2D\u0E07\u0E01\u0E25", active: true, department: "\u0E0A\u0E48\u0E32\u0E07\u0E22\u0E19\u0E15\u0E4C", quota: 20 },
+    { code: "12", track: "pvs", name: "\u0E40\u0E17\u0E04\u0E19\u0E34\u0E04\u0E01\u0E32\u0E23\u0E1C\u0E25\u0E34\u0E15", active: true, department: "\u0E0A\u0E48\u0E32\u0E07\u0E01\u0E25\u0E42\u0E23\u0E07\u0E07\u0E32\u0E19", quota: 20 },
+    { code: "13", track: "pvs", name: "\u0E44\u0E1F\u0E1F\u0E49\u0E32", active: true, department: "\u0E0A\u0E48\u0E32\u0E07\u0E44\u0E1F\u0E1F\u0E49\u0E32\u0E01\u0E33\u0E25\u0E31\u0E07", quota: 20 },
+    { code: "14", track: "pvs", name: "\u0E2D\u0E34\u0E40\u0E25\u0E47\u0E01\u0E17\u0E23\u0E2D\u0E19\u0E34\u0E01\u0E2A\u0E4C", active: true, department: "\u0E2D\u0E34\u0E40\u0E25\u0E47\u0E01\u0E17\u0E23\u0E2D\u0E19\u0E34\u0E01\u0E2A\u0E4C", quota: 20 },
+    { code: "15", track: "pvs", name: "\u0E40\u0E21\u0E04\u0E04\u0E32\u0E17\u0E23\u0E2D\u0E19\u0E34\u0E01\u0E2A\u0E4C\u0E41\u0E25\u0E30\u0E2B\u0E38\u0E48\u0E19\u0E22\u0E19\u0E15\u0E4C", active: true, department: "\u0E2D\u0E34\u0E40\u0E25\u0E47\u0E01\u0E17\u0E23\u0E2D\u0E19\u0E34\u0E01\u0E2A\u0E4C", quota: 20 },
+    { code: "16", track: "pvs", name: "\u0E01\u0E32\u0E23\u0E1A\u0E31\u0E0D\u0E0A\u0E35", active: true, department: "\u0E1A\u0E23\u0E34\u0E2B\u0E32\u0E23\u0E18\u0E38\u0E23\u0E01\u0E34\u0E08", quota: 20 },
+    { code: "17", track: "pvs", name: "\u0E40\u0E17\u0E04\u0E42\u0E19\u0E42\u0E25\u0E22\u0E35\u0E18\u0E38\u0E23\u0E01\u0E34\u0E08\u0E14\u0E34\u0E08\u0E34\u0E17\u0E31\u0E25", active: true, department: "\u0E1A\u0E23\u0E34\u0E2B\u0E32\u0E23\u0E18\u0E38\u0E23\u0E01\u0E34\u0E08", quota: 20 }
   ];
   var fullName = (a) => `${a.prefix}${a.firstName} ${a.lastName}`.trim();
   var programName = (programs, code) => {
@@ -232,6 +254,9 @@ var Domain = (() => {
     "\u0E1E\u0E24\u0E28\u0E08\u0E34\u0E01\u0E32\u0E22\u0E19",
     "\u0E18\u0E31\u0E19\u0E27\u0E32\u0E04\u0E21"
   ];
+  function toArabicDigits(value) {
+    return value.replace(/[๐-๙]/g, (digit) => String(THAI_DIGITS.indexOf(digit)));
+  }
   function toThaiDigits(value) {
     return String(value).replace(/[0-9]/g, (digit) => THAI_DIGITS[Number(digit)]);
   }
@@ -355,7 +380,7 @@ var Domain = (() => {
   var isValidPhone = (phone) => /^0\d{9}$/.test(phone);
   var MAX_TEXT = 120;
   var CONTROL_CHARS = /[\u0000-\u001f\u007f]/g;
-  var clean = (value) => typeof value === "string" ? value.replace(CONTROL_CHARS, " ").replace(/\s+/g, " ").trim().slice(0, MAX_TEXT) : "";
+  var clean = (value) => typeof value === "string" ? toArabicDigits(value.replace(CONTROL_CHARS, " ").replace(/\s+/g, " ").trim()).slice(0, MAX_TEXT) : "";
   var digitsOnly = (value) => value.replace(/\D/g, "");
   function normalizeInput(raw) {
     const source = raw && typeof raw === "object" ? raw : {};
@@ -651,6 +676,17 @@ var Domain = (() => {
     repo.update(next);
     return next;
   }
+  function updateApplicant(repo, programs, id, raw, ctx) {
+    const applicant = getApplicant(repo, id);
+    const input = normalizeInput({ ...raw && typeof raw === "object" ? raw : {}, consent: "yes" });
+    const issues = validateApplication(input, programs.map((p) => ({ ...p, active: true })), bangkokDateParts(ctx.nowIso));
+    if (issues.length) fail("VALIDATION", "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E04\u0E23\u0E1A\u0E2B\u0E23\u0E37\u0E2D\u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07", issues);
+    const clash = repo.list().find((item) => item.id !== id && item.academicYear === applicant.academicYear && item.nationalId === input.nationalId);
+    if (clash) fail("CONFLICT", `\u0E40\u0E25\u0E02\u0E1A\u0E31\u0E15\u0E23\u0E19\u0E35\u0E49\u0E0B\u0E49\u0E33\u0E01\u0E31\u0E1A\u0E43\u0E1A\u0E2A\u0E21\u0E31\u0E04\u0E23 ${clash.appNo}`, [{ field: "nationalId", message: `\u0E0B\u0E49\u0E33\u0E01\u0E31\u0E1A\u0E43\u0E1A\u0E2A\u0E21\u0E31\u0E04\u0E23 ${clash.appNo}` }]);
+    const next = { ...applicant, ...input, consent: applicant.consent, updatedAt: ctx.nowIso, updatedBy: ctx.actor };
+    repo.update(next);
+    return next;
+  }
 
   // shared/stats.ts
   function tally(items, limit = Infinity) {
@@ -660,7 +696,7 @@ var Domain = (() => {
     return [...map.entries()].map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value || a.label.localeCompare(b.label, "th")).slice(0, limit);
   }
   function computeStats(all, programs, academicYear, nowIso) {
-    var _a, _b;
+    var _a, _b, _c, _d;
     const list = all.filter((item) => item.academicYear === academicYear);
     const todayKey = bangkokDateKey(nowIso);
     const dailyMap = /* @__PURE__ */ new Map();
@@ -689,6 +725,12 @@ var Domain = (() => {
       bySchool: tally(list.map((item) => item.schoolName), 10),
       byProvince: tally(list.map((item) => item.province), 10),
       byChannel: tally(list.map((item) => item.channel)),
+      byDepartment: tally(list.map((item) => {
+        var _a2, _b2;
+        const track = item.level === "pvc" ? "pvc" : "pvs";
+        return (_b2 = (_a2 = programs.find((p) => p.track === track && p.code === firstChoice(item))) == null ? void 0 : _a2.department) != null ? _b2 : "";
+      }).filter(Boolean).map((name) => `\u0E41\u0E1C\u0E19\u0E01\u0E27\u0E34\u0E0A\u0E32${name}`)),
+      quota: (_d = (_c = computePublicStats(all, programs, academicYear, nowIso).years.find((y) => y.year === academicYear)) == null ? void 0 : _c.programs) != null ? _d : [],
       daily
     };
   }
@@ -697,18 +739,19 @@ var Domain = (() => {
     return {
       updatedAt: nowIso,
       years: years.map((year) => {
-        var _a;
+        var _a, _b, _c;
         const list = all.filter((item) => item.academicYear === year);
         const counts = /* @__PURE__ */ new Map();
         for (const program of programs) {
-          if (program.active) counts.set(`${program.track}:${program.code}`, { track: program.track, code: program.code, name: program.name, value: 0 });
+          if (program.active) counts.set(`${program.track}:${program.code}`, { track: program.track, code: program.code, name: program.name, department: program.department, quota: program.quota, value: 0 });
         }
         for (const item of list) {
           const track = item.level === "pvc" ? "pvc" : "pvs";
           const code = firstChoice(item);
           if (!code) continue;
           const key = `${track}:${code}`;
-          const entry = (_a = counts.get(key)) != null ? _a : { track, code, name: programName(programs.filter((p) => p.track === track), code) || `\u0E2A\u0E32\u0E02\u0E32\u0E23\u0E2B\u0E31\u0E2A ${code}`, value: 0 };
+          const known = programs.find((p) => p.track === track && p.code === code);
+          const entry = (_c = counts.get(key)) != null ? _c : { track, code, name: (known == null ? void 0 : known.name) || `\u0E2A\u0E32\u0E02\u0E32\u0E23\u0E2B\u0E31\u0E2A ${code}`, department: (_a = known == null ? void 0 : known.department) != null ? _a : "", quota: (_b = known == null ? void 0 : known.quota) != null ? _b : 0, value: 0 };
           entry.value += 1;
           counts.set(key, entry);
         }
@@ -723,11 +766,32 @@ var Domain = (() => {
       })
     };
   }
+  function schoolsByProgram(all, programs, academicYear) {
+    var _a;
+    const groups = /* @__PURE__ */ new Map();
+    for (const item of all) {
+      if (item.academicYear !== academicYear) continue;
+      const track = item.level === "pvc" ? "pvc" : "pvs";
+      const key = `${track}:${firstChoice(item)}`;
+      groups.set(key, [...(_a = groups.get(key)) != null ? _a : [], item.schoolName]);
+    }
+    return [...groups.entries()].map(([key, schools]) => {
+      var _a2, _b;
+      const [track, code] = key.split(":");
+      const name = (_b = (_a2 = programs.find((p) => p.track === track && p.code === code)) == null ? void 0 : _a2.name) != null ? _b : `\u0E23\u0E2B\u0E31\u0E2A ${code}`;
+      return { key, label: `${track === "pvc" ? "\u0E1B\u0E27\u0E0A." : "\u0E1B\u0E27\u0E2A."} ${name}`, total: schools.length, schools: tally(schools) };
+    }).sort((a, b) => b.total - a.total || a.label.localeCompare(b.label, "th"));
+  }
 
   // shared/exportData.ts
   var EXPORT_PRESET_LABEL = {
     full: "\u0E23\u0E32\u0E22\u0E0A\u0E37\u0E48\u0E2D\u0E1C\u0E39\u0E49\u0E2A\u0E21\u0E31\u0E04\u0E23\u0E17\u0E31\u0E49\u0E07\u0E2B\u0E21\u0E14 (\u0E17\u0E38\u0E01\u0E0A\u0E48\u0E2D\u0E07)",
     registry: "\u0E19\u0E33\u0E40\u0E02\u0E49\u0E32\u0E07\u0E32\u0E19\u0E17\u0E30\u0E40\u0E1A\u0E35\u0E22\u0E19 (\u0E1C\u0E39\u0E49\u0E21\u0E2D\u0E1A\u0E15\u0E31\u0E27\u0E41\u0E25\u0E49\u0E27)"
+  };
+  var departmentOf = (a, programs) => {
+    var _a, _b;
+    const track = a.level === "pvc" ? "pvc" : "pvs";
+    return (_b = (_a = programs.find((p) => p.track === track && p.code === firstChoice(a))) == null ? void 0 : _a.department) != null ? _b : "";
   };
   var thaiSlashDate = (iso) => {
     const parts = parseIsoDate(iso);
@@ -754,6 +818,7 @@ var Domain = (() => {
       var _a;
       return (_a = LEVEL_LABEL[a.level]) != null ? _a : a.level;
     }],
+    ["\u0E41\u0E1C\u0E19\u0E01\u0E27\u0E34\u0E0A\u0E32", (a, p) => departmentOf(a, p)],
     ["\u0E2A\u0E32\u0E02\u0E32 \u0E1B\u0E27\u0E2A.", (a, p) => programName(p, a.programPvs)],
     ["\u0E2A\u0E32\u0E02\u0E32 \u0E1B\u0E27\u0E0A. \u0E25\u0E33\u0E14\u0E31\u0E1A 1", (a, p) => programName(p, a.programPvc1)],
     ["\u0E2A\u0E32\u0E02\u0E32 \u0E1B\u0E27\u0E0A. \u0E25\u0E33\u0E14\u0E31\u0E1A 2", (a, p) => programName(p, a.programPvc2)],
@@ -849,6 +914,28 @@ var Domain = (() => {
     return `\uFEFF${[headers, ...rows].map((row) => row.map(cell).join(",")).join("\r\n")}\r
 `;
   }
+  function exportByProgram(applicants, programs) {
+    var _a;
+    const groups = /* @__PURE__ */ new Map();
+    for (const a of applicants) {
+      const track = a.level === "pvc" ? "pvc" : "pvs";
+      const key = `${track}:${firstChoice(a)}`;
+      groups.set(key, [...(_a = groups.get(key)) != null ? _a : [], a]);
+    }
+    const used = /* @__PURE__ */ new Set();
+    return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([key, list]) => {
+      var _a2, _b;
+      const [track, code] = key.split(":");
+      const base = `${track === "pvc" ? "\u0E1B\u0E27\u0E0A" : "\u0E1B\u0E27\u0E2A"} ${(_b = (_a2 = programs.find((p) => p.track === track && p.code === code)) == null ? void 0 : _a2.name) != null ? _b : code}`.slice(0, 28);
+      let name = base;
+      for (let n = 2; used.has(name); n += 1) name = `${base.slice(0, 26)} ${n}`;
+      used.add(name);
+      const sorted = [...list].sort((x, y) => x.schoolName.localeCompare(y.schoolName, "th") || x.firstName.localeCompare(y.firstName, "th"));
+      const table = exportTable(sorted, programs, "full");
+      const byNo = new Map(table.rows.map((row) => [row[0], row]));
+      return { name, headers: table.headers, rows: sorted.map((a) => byNo.get(a.appNo)) };
+    });
+  }
 
   // shared/sheetRow.ts
   var SHEET_APPLICANTS = "Applicants";
@@ -856,6 +943,8 @@ var Domain = (() => {
   var SHEET_SETTINGS = "Settings";
   var SHEET_STAFF = "Staff";
   var SHEET_AUDIT = "Audit";
+  var SHEET_ANNOUNCEMENTS = "Announcements";
+  var SHEET_BACKUP_FOLDER = "\u0E2A\u0E33\u0E23\u0E2D\u0E07\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2D\u0E31\u0E15\u0E42\u0E19\u0E21\u0E31\u0E15\u0E34";
   var APPLICANT_COLUMNS = [
     "id",
     "appNo",
@@ -870,7 +959,8 @@ var Domain = (() => {
     "updatedAt",
     "updatedBy"
   ];
-  var PROGRAM_COLUMNS = ["code", "track", "name", "active"];
+  var PROGRAM_COLUMNS = ["code", "track", "name", "active", "department", "quota"];
+  var ANNOUNCEMENT_COLUMNS = ["id", "title", "body", "pinned", "published", "createdAt", "updatedAt"];
   var SETTINGS_COLUMNS = ["key", "value", "description"];
   var STAFF_COLUMNS = ["username", "displayName", "role", "status", "passwordSalt", "passwordHash", "tokenVersion", "lastLoginAt"];
   var AUDIT_COLUMNS = ["at", "actor", "action", "target", "detail"];
@@ -883,10 +973,10 @@ var Domain = (() => {
       return value === void 0 || value === null ? "" : String(value);
     });
   }
-  function parseJson(text, fallback) {
-    if (!text) return fallback;
+  function parseJson(text2, fallback) {
+    if (!text2) return fallback;
     try {
-      return JSON.parse(text);
+      return JSON.parse(text2);
     } catch {
       return fallback;
     }
@@ -911,21 +1001,52 @@ var Domain = (() => {
     return required.filter((column) => !header.includes(column));
   }
   var truthy = (value) => value === true || /^(true|1|yes|ใช่|เปิด)$/i.test(String(value).trim());
-  function parsePrograms(rows) {
+  function parsePrograms(header, rows) {
+    const col = (row, name) => {
+      var _a;
+      const index = header.indexOf(name);
+      return index === -1 ? "" : String((_a = row[index]) != null ? _a : "").trim();
+    };
     return rows.map((row) => {
-      var _a, _b, _c;
+      const name = col(row, "name");
+      const quota = Number(col(row, "quota"));
       return {
-        code: String((_a = row[0]) != null ? _a : "").trim(),
-        track: String((_b = row[1]) != null ? _b : "").trim().toLowerCase(),
-        name: String((_c = row[2]) != null ? _c : "").trim(),
-        active: truthy(row[3])
+        code: col(row, "code"),
+        track: col(row, "track").toLowerCase(),
+        name,
+        active: truthy(col(row, "active")),
+        department: col(row, "department") || name,
+        quota: Number.isInteger(quota) && quota > 0 ? quota : 0
       };
     }).filter((program) => /^[0-9A-Za-z]{1,4}$/.test(program.code) && (program.track === "pvc" || program.track === "pvs") && program.name !== "");
   }
-  function parseSettings(rows) {
-    const map = new Map(rows.map((row) => {
+  function programToRow(program) {
+    return [program.code, program.track, program.name, program.active ? "TRUE" : "FALSE", program.department, String(program.quota)];
+  }
+  function parseAnnouncements(header, rows) {
+    const col = (row, name) => {
       var _a;
-      return [String((_a = row[0]) != null ? _a : "").trim(), row[1]];
+      const index = header.indexOf(name);
+      return index === -1 ? "" : String((_a = row[index]) != null ? _a : "");
+    };
+    return rows.map((row) => ({
+      id: col(row, "id"),
+      title: col(row, "title"),
+      body: col(row, "body"),
+      pinned: truthy(col(row, "pinned")),
+      published: truthy(col(row, "published")),
+      createdAt: col(row, "createdAt"),
+      updatedAt: col(row, "updatedAt")
+    })).filter((item) => item.id !== "" && item.title !== "");
+  }
+  function announcementToRow(item) {
+    return [item.id, item.title, item.body, item.pinned ? "TRUE" : "FALSE", item.published ? "TRUE" : "FALSE", item.createdAt, item.updatedAt];
+  }
+  function parseSettings(rows) {
+    var _a;
+    const map = new Map(rows.map((row) => {
+      var _a2;
+      return [String((_a2 = row[0]) != null ? _a2 : "").trim(), row[1]];
     }));
     const problems = [];
     const settings = { ...DEFAULT_SETTINGS };
@@ -941,7 +1062,109 @@ var Domain = (() => {
       if (problem) problems.push(`studentIdPattern: ${problem}`);
       else settings.studentIdPattern = pattern;
     }
+    for (const field of SETTING_TEXT_FIELDS) {
+      const value = String((_a = map.get(field)) != null ? _a : "").trim();
+      if (value) settings[field] = value;
+    }
     return { settings, problems };
+  }
+
+  // shared/admin.ts
+  var text = (value, max) => typeof value === "string" ? value.replace(/[\u0000-\u0009\u000b-\u001f\u007f]/g, "").trim().slice(0, max) : "";
+  function normalizePrograms(raw, applicants) {
+    if (!Array.isArray(raw)) fail("BAD_REQUEST", "\u0E23\u0E39\u0E1B\u0E41\u0E1A\u0E1A\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23\u0E2A\u0E32\u0E02\u0E32\u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07");
+    if (raw.length > 200) fail("BAD_REQUEST", "\u0E08\u0E33\u0E19\u0E27\u0E19\u0E2A\u0E32\u0E02\u0E32\u0E21\u0E32\u0E01\u0E40\u0E01\u0E34\u0E19\u0E44\u0E1B");
+    const issues = [];
+    const seen = /* @__PURE__ */ new Set();
+    const programs = raw.map((item, index) => {
+      var _a;
+      const source = item && typeof item === "object" ? item : {};
+      const track = source.track === "pvs" ? "pvs" : "pvc";
+      const program = {
+        track,
+        code: toArabicDigits(text(source.code, 4)),
+        name: text(source.name, 80),
+        department: text(source.department, 60).replace(/^แผนกวิชา\s*/, ""),
+        quota: Number(toArabicDigits(String((_a = source.quota) != null ? _a : "0"))),
+        active: source.active !== false
+      };
+      const at = (field, message) => issues.push({ field: `${index}.${field}`, message });
+      if (!/^[0-9]{2}$/.test(program.code)) at("code", "\u0E23\u0E2B\u0E31\u0E2A\u0E2A\u0E32\u0E02\u0E32\u0E15\u0E49\u0E2D\u0E07\u0E40\u0E1B\u0E47\u0E19\u0E15\u0E31\u0E27\u0E40\u0E25\u0E02 2 \u0E2B\u0E25\u0E31\u0E01 \u0E40\u0E0A\u0E48\u0E19 01");
+      if (program.name === "") at("name", "\u0E01\u0E23\u0E2D\u0E01\u0E0A\u0E37\u0E48\u0E2D\u0E2A\u0E32\u0E02\u0E32\u0E27\u0E34\u0E0A\u0E32");
+      if (program.department === "") at("department", "\u0E01\u0E23\u0E2D\u0E01\u0E41\u0E1C\u0E19\u0E01\u0E27\u0E34\u0E0A\u0E32");
+      if (!Number.isInteger(program.quota) || program.quota < 0 || program.quota > 9999) at("quota", "\u0E08\u0E33\u0E19\u0E27\u0E19\u0E23\u0E31\u0E1A\u0E15\u0E49\u0E2D\u0E07\u0E40\u0E1B\u0E47\u0E19\u0E08\u0E33\u0E19\u0E27\u0E19\u0E40\u0E15\u0E47\u0E21 0\u20139999 (0 = \u0E44\u0E21\u0E48\u0E08\u0E33\u0E01\u0E31\u0E14)");
+      const key = `${track}:${program.code}`;
+      if (seen.has(key)) at("code", `\u0E23\u0E2B\u0E31\u0E2A ${program.code} \u0E0B\u0E49\u0E33\u0E43\u0E19\u0E23\u0E30\u0E14\u0E31\u0E1A ${track === "pvc" ? "\u0E1B\u0E27\u0E0A." : "\u0E1B\u0E27\u0E2A."}`);
+      seen.add(key);
+      return program;
+    });
+    const used = new Set(applicants.flatMap((a) => {
+      const track = a.level === "pvc" ? "pvc" : "pvs";
+      return [a.programPvs, a.programPvc1, a.programPvc2].filter(Boolean).map((code) => `${track}:${code}`);
+    }));
+    for (const key of used) {
+      if (!seen.has(key)) {
+        const [track, code] = key.split(":");
+        issues.push({ field: "list", message: `\u0E25\u0E1A\u0E2A\u0E32\u0E02\u0E32\u0E23\u0E2B\u0E31\u0E2A ${code} (${track === "pvc" ? "\u0E1B\u0E27\u0E0A." : "\u0E1B\u0E27\u0E2A."}) \u0E44\u0E21\u0E48\u0E44\u0E14\u0E49 \u0E40\u0E1E\u0E23\u0E32\u0E30\u0E21\u0E35\u0E1C\u0E39\u0E49\u0E2A\u0E21\u0E31\u0E04\u0E23\u0E40\u0E25\u0E37\u0E2D\u0E01\u0E44\u0E27\u0E49\u0E41\u0E25\u0E49\u0E27 \u0E43\u0E2B\u0E49\u0E1B\u0E34\u0E14\u0E23\u0E31\u0E1A\u0E41\u0E17\u0E19` });
+      }
+    }
+    if (issues.length) fail("VALIDATION", issues[0].message, issues);
+    return programs.sort((a, b) => a.track.localeCompare(b.track) || a.code.localeCompare(b.code));
+  }
+  function departmentsOf(programs) {
+    return [...new Set(programs.map((p) => p.department).filter(Boolean))].sort((a, b) => a.localeCompare(b, "th"));
+  }
+  function countFirstChoice(applicants, program, academicYear) {
+    return applicants.filter(
+      (a) => a.academicYear === academicYear && a.level === "pvc" === (program.track === "pvc") && firstChoice(a) === program.code
+    ).length;
+  }
+  function saveAnnouncement(list, raw, ctx) {
+    var _a, _b;
+    const source = raw && typeof raw === "object" ? raw : {};
+    const title = text(source.title, 150);
+    const body = text(source.body, 5e3);
+    const issues = [];
+    if (title === "") issues.push({ field: "title", message: "\u0E01\u0E23\u0E2D\u0E01\u0E2B\u0E31\u0E27\u0E02\u0E49\u0E2D\u0E1B\u0E23\u0E30\u0E01\u0E32\u0E28" });
+    if (body === "") issues.push({ field: "body", message: "\u0E01\u0E23\u0E2D\u0E01\u0E40\u0E19\u0E37\u0E49\u0E2D\u0E2B\u0E32\u0E1B\u0E23\u0E30\u0E01\u0E32\u0E28" });
+    if (issues.length) fail("VALIDATION", "\u0E1B\u0E23\u0E30\u0E01\u0E32\u0E28\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E04\u0E23\u0E1A", issues);
+    const id = typeof source.id === "string" ? source.id : "";
+    const existing = list.find((item) => item.id === id);
+    if (id && !existing) fail("NOT_FOUND", "\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E1B\u0E23\u0E30\u0E01\u0E32\u0E28\u0E19\u0E35\u0E49 \u0E2D\u0E32\u0E08\u0E16\u0E39\u0E01\u0E25\u0E1A\u0E44\u0E1B\u0E41\u0E25\u0E49\u0E27");
+    const next = {
+      id: (_a = existing == null ? void 0 : existing.id) != null ? _a : ctx.newId(),
+      title,
+      body,
+      pinned: source.pinned === true,
+      published: source.published !== false,
+      createdAt: (_b = existing == null ? void 0 : existing.createdAt) != null ? _b : ctx.nowIso,
+      updatedAt: ctx.nowIso
+    };
+    return existing ? list.map((item) => item.id === next.id ? next : item) : [next, ...list];
+  }
+  function deleteAnnouncement(list, id) {
+    if (!list.some((item) => item.id === id)) fail("NOT_FOUND", "\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E1B\u0E23\u0E30\u0E01\u0E32\u0E28\u0E19\u0E35\u0E49");
+    return list.filter((item) => item.id !== id);
+  }
+  function publicAnnouncements(list) {
+    return list.filter((item) => item.published).sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.createdAt.localeCompare(a.createdAt));
+  }
+  function normalizeSettings(raw) {
+    var _a;
+    const source = raw && typeof raw === "object" ? raw : {};
+    const issues = [];
+    const year = Number(toArabicDigits(String((_a = source.academicYear) != null ? _a : "")));
+    if (!Number.isInteger(year) || year < 2560 || year > 2700) issues.push({ field: "academicYear", message: "\u0E43\u0E2A\u0E48\u0E1B\u0E35 \u0E1E.\u0E28. \u0E40\u0E0A\u0E48\u0E19 2570" });
+    const pattern = text(source.studentIdPattern, 40);
+    const problem = checkStudentIdPattern(pattern);
+    if (problem) issues.push({ field: "studentIdPattern", message: problem });
+    const settings = { ...DEFAULT_SETTINGS, academicYear: year, applicationsOpen: source.applicationsOpen === true, studentIdPattern: pattern };
+    for (const field of SETTING_TEXT_FIELDS) {
+      const value = text(source[field], field === "details" ? 4e3 : 300);
+      settings[field] = value || DEFAULT_SETTINGS[field];
+    }
+    if (issues.length) fail("VALIDATION", issues[0].message, issues);
+    return settings;
   }
   return __toCommonJS(index_exports);
 })();

@@ -197,9 +197,71 @@ describe('ยอดสรุปหน้าแรก', () => {
     expect(stats.years.map((y) => y.year)).toEqual([2570, 2569]);
     const y70 = stats.years[0]!;
     expect(y70).toMatchObject({ total: 1, pvc: 1, pvs: 0 });
-    expect(y70.programs[0]).toEqual({ track: 'pvc', code: '01', name: 'ช่างยนต์', value: 1 });
+    expect(y70.programs[0]).toMatchObject({ track: 'pvc', code: '01', name: 'ช่างยนต์', department: 'ช่างยนต์', quota: 40, value: 1 });
     expect(y70.programs).toHaveLength(SAMPLE_PROGRAMS.length); // สาขาที่ยังไม่มีคนเลือกก็แสดง
     expect(JSON.stringify(stats)).not.toContain(VALID_ID);
     expect(JSON.stringify(stats)).not.toContain('สมชาย');
+  });
+});
+
+describe('งานผู้ดูแล (แผนก/สาขา ประกาศ แก้ข้อมูล)', async () => {
+  const admin = await import('../admin');
+  const { exportByProgram } = await import('../exportData');
+  const { buildWorkbook } = await import('../xlsx');
+  const { parsePrograms, PROGRAM_COLUMNS } = await import('../sheetRow');
+  const { updateApplicant } = await import('../service');
+
+  it('เลขไทยที่กรอกมาถูกแปลงเป็นอารบิก', () => {
+    const input = normalizeInput({ ...goodInput, phone: '๐๘๑-๒๓๔-๕๖๗๘', nationalId: '๑๑๐๑๗๐๐๒๐๗๐๓๐', gpa: '๓.๒๕' });
+    expect(input.phone).toBe('0812345678');
+    expect(input.nationalId).toBe(VALID_ID);
+    expect(input.gpa).toBe('3.25');
+  });
+
+  it('ตรวจรายการสาขา: รหัสซ้ำ และห้ามลบสาขาที่มีผู้สมัคร', () => {
+    const base = SAMPLE_PROGRAMS.map((p) => ({ ...p }));
+    expect(() => admin.normalizePrograms([...base, { ...base[0]! }], [])).toThrow(/ซ้ำ/);
+    expect(admin.normalizePrograms([{ code: '๐๙', track: 'pvc', name: 'ช่างซ่อม', department: 'แผนกวิชาช่างยนต์', quota: '๓๐' }], [])[0])
+      .toMatchObject({ code: '09', department: 'ช่างยนต์', quota: 30 });
+    const repo = memoryRepo();
+    submitApplication(repo, DEFAULT_SETTINGS, SAMPLE_PROGRAMS, goodInput, ctx());
+    expect(() => admin.normalizePrograms(base.filter((p) => !(p.track === 'pvc' && p.code === '01')), repo.items)).toThrow(/ลบสาขารหัส 01/);
+  });
+
+  it('ชีต Programs รุ่นแรก (ไม่มี department/quota) ยังอ่านได้', () => {
+    const programs = parsePrograms(['code', 'track', 'name', 'active'], [['01', 'pvc', 'ช่างยนต์', 'TRUE']]);
+    expect(programs[0]).toMatchObject({ department: 'ช่างยนต์', quota: 0 });
+    expect(PROGRAM_COLUMNS).toContain('quota');
+  });
+
+  it('ประกาศ: เพิ่ม แก้ ลบ และหน้าเว็บเห็นเฉพาะที่เผยแพร่ ปักหมุดขึ้นก่อน', () => {
+    const c = { nowIso: '2026-11-06T00:00:00.000Z', newId: () => `a${Math.random()}` };
+    let list = admin.saveAnnouncement([], { title: 'เปิดรับสมัคร', body: 'รอบโควตา' }, c);
+    list = admin.saveAnnouncement(list, { title: 'ร่าง', body: 'ยังไม่ประกาศ', published: false }, { ...c, nowIso: '2026-11-07T00:00:00.000Z' });
+    list = admin.saveAnnouncement(list, { title: 'สำคัญ', body: 'ปักหมุด', pinned: true }, { ...c, nowIso: '2026-11-01T00:00:00.000Z' });
+    expect(admin.publicAnnouncements(list).map((a) => a.title)).toEqual(['สำคัญ', 'เปิดรับสมัคร']);
+    expect(() => admin.saveAnnouncement(list, { title: '' , body: 'x' }, c)).toThrow();
+    expect(admin.deleteAnnouncement(list, list[0]!.id)).toHaveLength(2);
+  });
+
+  it('เจ้าหน้าที่แก้ข้อมูลผู้สมัครได้ แต่เลขบัตรห้ามชนคนอื่น', () => {
+    const repo = memoryRepo();
+    const a = submitApplication(repo, DEFAULT_SETTINGS, SAMPLE_PROGRAMS, goodInput, ctx());
+    submitApplication(repo, DEFAULT_SETTINGS, SAMPLE_PROGRAMS, { ...goodInput, nationalId: '3100600123450' }, ctx());
+    expect(updateApplicant(repo, SAMPLE_PROGRAMS, a.id, { ...a, schoolName: 'โรงเรียนใหม่' }, ctx()).schoolName).toBe('โรงเรียนใหม่');
+    expect(() => updateApplicant(repo, SAMPLE_PROGRAMS, a.id, { ...a, nationalId: '3100600123450' }, ctx())).toThrow(/ซ้ำ/);
+  });
+
+  it('ส่งออกแยกชีตตามสาขา เรียงตามโรงเรียน', () => {
+    const repo = memoryRepo();
+    submitApplication(repo, DEFAULT_SETTINGS, SAMPLE_PROGRAMS, { ...goodInput, schoolName: 'ข โรงเรียน' }, ctx());
+    submitApplication(repo, DEFAULT_SETTINGS, SAMPLE_PROGRAMS, { ...goodInput, nationalId: '3100600123450', schoolName: 'ก โรงเรียน' }, ctx());
+    submitApplication(repo, DEFAULT_SETTINGS, SAMPLE_PROGRAMS, { ...goodInput, nationalId: '1234567890121', level: 'pvs_direct', programPvs: '13' }, ctx());
+    const sheets = exportByProgram(repo.items, SAMPLE_PROGRAMS);
+    expect(sheets.map((s) => s.name)).toEqual(['ปวช ช่างยนต์', 'ปวส ไฟฟ้า']);
+    const school = sheets[0]!.headers.indexOf('โรงเรียนเดิม');
+    expect(sheets[0]!.rows.map((r) => r[school])).toEqual(['ก โรงเรียน', 'ข โรงเรียน']);
+    const bytes = new TextDecoder().decode(buildWorkbook(sheets));
+    expect(bytes).toContain('xl/worksheets/sheet2.xml');
   });
 });

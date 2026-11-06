@@ -75,7 +75,12 @@ function apiHandlers_() {
         academicYear: settings.academicYear,
         applicationsOpen: settings.applicationsOpen,
         programs: readPrograms_().filter(function (program) { return program.active; }),
+        siteText: { heroTitle: settings.heroTitle, heroText: settings.heroText, details: settings.details },
       };
+    },
+
+    announcements: function () {
+      return { announcements: Domain.publicAnnouncements(readAnnouncements_()) };
     },
 
     submitApplication: function (payload) {
@@ -183,23 +188,72 @@ function apiHandlers_() {
       return { applicant: applicant };
     },
 
+    updateApplicant: function (payload, token) {
+      const staff = authenticate_(token);
+      const applicant = withScriptLock_(function () {
+        const next = Domain.updateApplicant(sheetRepo_(), readPrograms_(), String(payload.id || ''), payload.applicant, ctx_(staff.username));
+        bumpDataVersion_();
+        return next;
+      });
+      audit_(staff.username, 'updateApplicant', applicant.appNo, '');
+      return { applicant: applicant };
+    },
+
+    /* ---------- เฉพาะผู้ดูแล ---------- */
+
     saveSettings: function (payload, token) {
       const staff = requireAdmin_(token);
-      const pattern = String(payload.studentIdPattern || '').trim();
-      const problem = Domain.checkStudentIdPattern(pattern);
-      if (problem) throw appError_(ERROR_CODES.VALIDATION, problem, [{ field: 'studentIdPattern', message: problem }]);
-      const year = Number(payload.academicYear);
-      if (!Number.isInteger(year) || year < 2560 || year > 2700) {
-        throw appError_(ERROR_CODES.VALIDATION, 'ปีการศึกษาไม่ถูกต้อง', [{ field: 'academicYear', message: 'ใส่ปี พ.ศ. เช่น 2570' }]);
-      }
+      const settings = Domain.normalizeSettings(payload);
       withScriptLock_(function () {
-        writeSetting_('academicYear', year);
-        writeSetting_('applicationsOpen', payload.applicationsOpen ? 'TRUE' : 'FALSE');
-        writeSetting_('studentIdPattern', pattern);
+        writeSetting_('academicYear', settings.academicYear);
+        writeSetting_('applicationsOpen', settings.applicationsOpen ? 'TRUE' : 'FALSE');
+        writeSetting_('studentIdPattern', settings.studentIdPattern);
+        Domain.SETTING_TEXT_FIELDS.forEach(function (field) { writeSetting_(field, settings[field]); });
         bumpDataVersion_();
       });
-      audit_(staff.username, 'saveSettings', '', JSON.stringify(payload));
+      audit_(staff.username, 'saveSettings', '', '');
       return { settings: readSettings_() };
+    },
+
+    savePrograms: function (payload, token) {
+      const staff = requireAdmin_(token);
+      const programs = withScriptLock_(function () {
+        const next = Domain.normalizePrograms(payload.programs, sheetRepo_().list());
+        writePrograms_(next);
+        bumpDataVersion_();
+        return next;
+      });
+      audit_(staff.username, 'savePrograms', '', `${programs.length} สาขา`);
+      return { programs: programs };
+    },
+
+    adminAnnouncements: function (payload, token) {
+      authenticate_(token);
+      return { announcements: readAnnouncements_() };
+    },
+
+    saveAnnouncement: function (payload, token) {
+      const staff = requireAdmin_(token);
+      const list = withScriptLock_(function () {
+        const next = Domain.saveAnnouncement(readAnnouncements_(), payload, { nowIso: nowIso_(), newId: newId_ });
+        writeAnnouncements_(next);
+        bumpDataVersion_();
+        return next;
+      });
+      audit_(staff.username, 'saveAnnouncement', String(payload.title || ''), '');
+      return { announcements: list };
+    },
+
+    deleteAnnouncement: function (payload, token) {
+      const staff = requireAdmin_(token);
+      const list = withScriptLock_(function () {
+        const next = Domain.deleteAnnouncement(readAnnouncements_(), payload.id);
+        writeAnnouncements_(next);
+        bumpDataVersion_();
+        return next;
+      });
+      audit_(staff.username, 'deleteAnnouncement', String(payload.id || ''), '');
+      return { announcements: list };
     },
   };
 }

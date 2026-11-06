@@ -187,3 +187,17 @@ export function enroll(repo: Repo, settings: Settings, programs: readonly Progra
   repo.update(next);
   return next;
 }
+
+/** เจ้าหน้าที่แก้ข้อมูลที่ผู้สมัครกรอกผิด — ตรวจด้วยกฎเดียวกับตอนสมัคร และกันเลขบัตรชนกับคนอื่น */
+export function updateApplicant(repo: Repo, programs: readonly Program[], id: string, raw: unknown, ctx: Ctx): Applicant {
+  const applicant = getApplicant(repo, id);
+  const input = normalizeInput({ ...(raw && typeof raw === 'object' ? raw : {}), consent: 'yes' });
+  // ผู้สมัครที่สมัครไว้ก่อนสาขาถูกปิด ยังต้องแก้ข้อมูลอื่นได้ จึงตรวจสาขากับรายการที่รวมสาขาที่ปิดแล้วด้วย
+  const issues = validateApplication(input, programs.map((p) => ({ ...p, active: true })), bangkokDateParts(ctx.nowIso));
+  if (issues.length) fail('VALIDATION', 'ข้อมูลยังไม่ครบหรือไม่ถูกต้อง', issues);
+  const clash = repo.list().find((item) => item.id !== id && item.academicYear === applicant.academicYear && item.nationalId === input.nationalId);
+  if (clash) fail('CONFLICT', `เลขบัตรนี้ซ้ำกับใบสมัคร ${clash.appNo}`, [{ field: 'nationalId', message: `ซ้ำกับใบสมัคร ${clash.appNo}` }]);
+  const next: Applicant = { ...applicant, ...input, consent: applicant.consent, updatedAt: ctx.nowIso, updatedBy: ctx.actor };
+  repo.update(next);
+  return next;
+}

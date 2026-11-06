@@ -145,4 +145,7 @@
   .no-print { display: none !important; }
   /* แผ่นเดียวต่อหน้า และตัดส่วนที่ซ่อนไว้ไม่ให้เกิดหน้าว่างต่อท้าย */
   html:has(.print-area), html:has(.print-area) body { height: 297mm !important; overflow: hidden !important; }
+  /* หน้าที่พิมพ์ได้หลายแผ่น (เช่น QR หลายสาขา) ต้องไม่ถูกตัดที่หน้าแรก */
+  html:has(.print-multi), html:has(.print-multi) body { height: auto !important; overflow: visible !important; }
+  .print-multi { position: static !important; }
 }

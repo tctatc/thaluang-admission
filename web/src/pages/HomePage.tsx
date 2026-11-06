@@ -1,12 +1,16 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, FileText, Paperclip, Printer, Search } from 'lucide-react';
-import { DOC_INFO, DOC_KINDS } from '@shared/model';
+import { ArrowRight, FileText, Megaphone, Paperclip, Pin, Printer, Search } from 'lucide-react';
+import { DEFAULT_SETTINGS, DOC_INFO, DOC_KINDS, type Announcement } from '@shared/model';
+import { bangkokDateParts, thaiLongDate } from '@shared/thai';
+import { api } from '../lib/api';
 import { usePublicConfig } from '../app/App';
 import { PublicDashboard } from './PublicDashboard';
 
 export function HomePage() {
   const { config } = usePublicConfig();
   const open = config?.applicationsOpen ?? true;
+  const text = config?.siteText ?? DEFAULT_SETTINGS;
 
   return (
     <>
@@ -19,11 +23,9 @@ export function HomePage() {
         <div className="relative mx-auto max-w-6xl px-4 py-12 sm:py-16">
           <p className="enter text-gold">ปีการศึกษา {config ? config.academicYear : '…'} · รอบโควตา</p>
           <h1 className="enter mt-2 max-w-3xl text-3xl font-bold leading-tight sm:text-[2.6rem]">
-            สมัครเรียน ปวช. และ ปวส.<br />ที่วิทยาลัยเทคนิคท่าหลวงซิเมนต์ไทยอนุสรณ์
+            {text.heroTitle}
           </h1>
-          <p className="enter mt-4 max-w-2xl text-lg text-ink-inverse/85">
-            กรอกใบสมัครบนเว็บ ระบบเติมข้อมูลลงใบสมัครฉบับจริงของวิทยาลัยให้ทันที พิมพ์ ลงชื่อ แล้วนำมายื่นได้เลย ไม่ต้องเขียนเอง
-          </p>
+          <p className="enter mt-4 max-w-2xl whitespace-pre-line text-lg text-ink-inverse/85">{text.heroText}</p>
           <div className="enter mt-8 flex flex-wrap gap-3">
             {open ? (
               <Link to="/apply" className="inline-flex min-h-12 items-center gap-2 rounded-control bg-gold px-6 text-lg font-semibold text-brand-deep shadow-[0_3px_0_hsl(36_80%_30%)] transition-transform hover:brightness-105 active:translate-y-0.5 active:shadow-none">
@@ -39,7 +41,18 @@ export function HomePage() {
         </div>
       </section>
 
+      <Announcements />
+
       <PublicDashboard />
+
+      {text.details && (
+        <section aria-labelledby="details" className="mx-auto max-w-6xl px-4 pt-12">
+          <div className="rounded-card bg-surface p-6 shadow-card ring-1 ring-line">
+            <h2 id="details" className="text-2xl text-brand-deep">รายละเอียดการรับสมัคร</h2>
+            <p className="mt-3 max-w-[75ch] whitespace-pre-line text-[17px] leading-relaxed">{text.details}</p>
+          </div>
+        </section>
+      )}
 
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 lg:grid-cols-[1.1fr_1fr]">
         <section aria-labelledby="steps">
@@ -80,3 +93,33 @@ export function HomePage() {
 }
 
 const Dot = () => <span className="mt-2.5 size-2 shrink-0 rotate-45 bg-gold" aria-hidden="true" />;
+
+/** ประกาศจากผู้ดูแล — ไม่มีประกาศก็ไม่แสดงส่วนนี้ ยาวเกิน 3 รายการให้กดดูเพิ่ม */
+function Announcements() {
+  const [list, setList] = useState<Announcement[]>([]);
+  const [all, setAll] = useState(false);
+  useEffect(() => { api.announcements().then((r) => setList(r.announcements)).catch(() => setList([])); }, []);
+  if (list.length === 0) return null;
+  const shown = all ? list : list.slice(0, 3);
+  return (
+    <section aria-labelledby="news" className="mx-auto max-w-6xl px-4 pt-12">
+      <h2 id="news" className="flex items-center gap-2 text-2xl text-brand-deep"><Megaphone className="size-6 text-brand" aria-hidden="true" />ประกาศ</h2>
+      <ul className="mt-4 grid gap-3 md:grid-cols-2">
+        {shown.map((item, index) => (
+          <li key={item.id} className={`enter rounded-card bg-surface p-5 shadow-card ring-1 ${item.pinned ? 'ring-gold' : 'ring-line'} ${index === 0 && shown.length % 2 === 1 ? 'md:col-span-2' : ''}`}>
+            <p className="flex items-start gap-2 text-lg font-semibold">
+              {item.pinned && <Pin className="mt-1 size-4 shrink-0 text-gold-ink" aria-label="ปักหมุด" />}{item.title}
+            </p>
+            <p className="text-sm text-ink-muted">{thaiLongDate(bangkokDateParts(item.updatedAt))}</p>
+            <p className="mt-2 whitespace-pre-line">{item.body}</p>
+          </li>
+        ))}
+      </ul>
+      {list.length > 3 && (
+        <button type="button" onClick={() => setAll((v) => !v)} className="mt-3 min-h-11 font-medium text-brand underline">
+          {all ? 'ย่อ' : `ดูประกาศทั้งหมด (${list.length})`}
+        </button>
+      )}
+    </section>
+  );
+}

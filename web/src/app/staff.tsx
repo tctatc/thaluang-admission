@@ -7,11 +7,11 @@ import { readStore, removeStore, writeStore } from '../lib/storage';
  * สถานะการเข้าสู่ระบบของเจ้าหน้าที่ + รายชื่อผู้สมัครที่อัปเดตเอง
  *
  * token เก็บใน sessionStorage (ปิดแท็บแล้วหลุด) เพราะเครื่องในห้องธุรการมักใช้ร่วมกันหลายคน
- * รายชื่อดึงใหม่เฉพาะเมื่อ dataVersion บน server เปลี่ยน — ถามทุก 20 วินาที ซึ่งเบามาก
+ * รายชื่อดึงใหม่เฉพาะเมื่อ dataVersion บน server เปลี่ยน — ถามทุก 10 วินาที ซึ่งเบามาก
  */
 
 const TOKEN_KEY = 'tla.staff.token';
-const POLL_MS = 20_000;
+const POLL_MS = 10_000;
 
 interface StaffState {
   token: string;
@@ -80,7 +80,10 @@ export function StaffProvider({ children }: { children: ReactNode }) {
       try {
         const { dataVersion } = await api.version();
         if (dataVersion !== version.current) {
-          const list = await api.applicants(token);
+          // สาขา/จำนวนรับอาจถูกผู้ดูแลอีกเครื่องแก้ ดึงมาพร้อมกันเลย
+          const [me, list] = await Promise.all([api.me(token), api.applicants(token)]);
+          setPrograms(me.programs);
+          setSettings(me.settings);
           setApplicants(list.applicants);
           version.current = list.dataVersion;
         }

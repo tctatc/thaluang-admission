@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Sparkles } from 'lucide-react';
-import { computeStats, type Count } from '@shared/stats';
+import { computeStats, schoolsByProgram, type Count } from '@shared/stats';
+import { QuotaTable } from '../PublicDashboard';
 import { THAI_MONTHS, parseIsoDate } from '@shared/thai';
 import { useStaff } from '../../app/staff';
 import { Button, Panel } from '../../components/ui';
@@ -11,6 +12,7 @@ export function DashboardPage() {
   const { applicants, programs, settings, token, reload } = useStaff();
   const year = settings?.academicYear ?? 0;
   const stats = useMemo(() => computeStats(applicants, programs, year, new Date().toISOString()), [applicants, programs, year]);
+  const schools = useMemo(() => schoolsByProgram(applicants, programs, year), [applicants, programs, year]);
   const [seeding, setSeeding] = useState(false);
   const [seedError, setSeedError] = useState('');
 
@@ -31,7 +33,7 @@ export function DashboardPage() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-brand-deep">ภาพรวมการรับสมัคร ปีการศึกษา {year}</h1>
-          <p className="text-sm text-ink-muted">อัปเดตเองทุก 20 วินาทีเมื่อมีผู้สมัครใหม่ · การรับสมัคร{settings?.applicationsOpen ? 'เปิดอยู่' : 'ปิดอยู่'}</p>
+          <p className="text-sm text-ink-muted">อัปเดตเองทุก 10 วินาทีเมื่อมีผู้สมัครใหม่ · การรับสมัคร{settings?.applicationsOpen ? 'เปิดอยู่' : 'ปิดอยู่'}</p>
         </div>
         <Link to="/staff/applicants?status=submitted" className="inline-flex min-h-11 items-center rounded-control bg-brand px-4 font-medium text-ink-inverse hover:bg-brand-hover">
           ตรวจใบสมัครที่รออยู่ ({stats.waitingReview})
@@ -70,10 +72,13 @@ export function DashboardPage() {
               <Panel title="ตามสถานะ"><Bars data={stats.byStatus} /></Panel>
               <Panel title="ตามระดับที่สมัคร"><Bars data={stats.byLevel} /></Panel>
             </div>
+            <Panel title="ตามแผนกวิชา"><Bars data={stats.byDepartment} /></Panel>
             <Panel title="โรงเรียนเดิม (10 อันดับแรก)"><Bars data={stats.bySchool} /></Panel>
             <Panel title="จังหวัด (10 อันดับแรก)"><Bars data={stats.byProvince} /></Panel>
-            <Panel title="ช่องทางที่รู้จักวิทยาลัย" className="lg:col-span-2"><Bars data={stats.byChannel} /></Panel>
+            <Panel title="ช่องทางที่รู้จักวิทยาลัย"><Bars data={stats.byChannel} /></Panel>
           </div>
+          <Panel title="ผู้สมัครเทียบจำนวนรับ"><QuotaTable programs={stats.quota} /></Panel>
+          <SchoolsByProgram groups={schools} />
         </>
       )}
     </div>
@@ -120,5 +125,33 @@ function DailyChart({ daily }: { daily: { date: string; value: number }[] }) {
         <span>{label(daily[0]!.date)}</span><span>วันนี้</span>
       </div>
     </div>
+  );
+}
+
+/** โรงเรียนเดิมของผู้สมัครแต่ละสาขา — เลือกสาขาแล้วดูว่ามาจากโรงเรียนไหนบ้าง (ใช้วางแผนออกแนะแนว) */
+function SchoolsByProgram({ groups }: { groups: ReturnType<typeof schoolsByProgram> }) {
+  const [key, setKey] = useState('');
+  const current = groups.find((g) => g.key === key) ?? groups[0];
+  if (!current) return null;
+  return (
+    <Panel
+      title="โรงเรียนเดิมแยกตามสาขา"
+      action={
+        <select aria-label="สาขา" value={current.key} onChange={(e) => setKey(e.target.value)} className="min-h-11 rounded-control border border-line-strong bg-surface px-3 text-[15px]">
+          {groups.map((g) => <option key={g.key} value={g.key}>{g.label} ({g.total})</option>)}
+        </select>
+      }
+    >
+      <table className="w-full text-left text-[15px]">
+        <thead className="border-b border-line text-sm text-ink-muted">
+          <tr><th className="w-12 py-2 font-medium">#</th><th className="py-2 font-medium">โรงเรียนเดิม</th><th className="w-24 py-2 text-right font-medium">จำนวน</th></tr>
+        </thead>
+        <tbody className="divide-y divide-line">
+          {current.schools.map((school, index) => (
+            <tr key={school.label}><td className="py-2 text-ink-muted" data-numeric>{index + 1}</td><td className="py-2">{school.label}</td><td className="py-2 text-right font-medium" data-numeric>{school.value} คน</td></tr>
+          ))}
+        </tbody>
+      </table>
+    </Panel>
   );
 }

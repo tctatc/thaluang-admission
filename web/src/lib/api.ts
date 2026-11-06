@@ -11,7 +11,7 @@
  *  2. Apps Script ตอบ HTTP 200 เสมอ ต้องดูฟิลด์ ok ในเนื้อหา
  */
 
-import type { Applicant, DocKind, DocState, Program, Settings, Status } from '@shared/model';
+import type { Announcement, Applicant, DocKind, DocState, Program, Settings, Status } from '@shared/model';
 import type { PublicApplicant } from '@shared/service';
 import type { PublicStats } from '@shared/stats';
 import type { Issue } from '@shared/validate';
@@ -74,7 +74,8 @@ export const apiMode = transport.mode;
 
 /* ---------- คำสั่งที่หน้าเว็บใช้ ---------- */
 
-export interface PublicConfig { academicYear: number; applicationsOpen: boolean; programs: Program[] }
+export interface SiteText { heroTitle: string; heroText: string; details: string }
+export interface PublicConfig { academicYear: number; applicationsOpen: boolean; programs: Program[]; siteText: SiteText }
 export interface Credentials { nationalId: string; birthDate: string }
 export interface StaffUser { username: string; displayName: string; role: 'admin' | 'staff' }
 
@@ -97,6 +98,12 @@ export const api = {
   enroll: (token: string, id: string, enrollment: unknown) => transport.call<{ applicant: Applicant }>('enroll', { id, enrollment }, token),
   saveSettings: (token: string, settings: Settings) => transport.call<{ settings: Settings }>('saveSettings', settings, token),
   seedDemo: (token: string) => transport.call<{ added: number }>('seedDemo', {}, token),
+  announcements: () => transport.call<{ announcements: Announcement[] }>('announcements'),
+  adminAnnouncements: (token: string) => transport.call<{ announcements: Announcement[] }>('adminAnnouncements', {}, token),
+  saveAnnouncement: (token: string, item: Partial<Announcement>) => transport.call<{ announcements: Announcement[] }>('saveAnnouncement', item, token),
+  deleteAnnouncement: (token: string, id: string) => transport.call<{ announcements: Announcement[] }>('deleteAnnouncement', { id }, token),
+  savePrograms: (token: string, programs: Program[]) => transport.call<{ programs: Program[] }>('savePrograms', { programs }, token),
+  updateApplicant: (token: string, id: string, applicant: unknown) => transport.call<{ applicant: Applicant }>('updateApplicant', { id, applicant }, token),
 };
 
 export function errorMessage(error: unknown): string {

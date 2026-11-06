@@ -1,4 +1,4 @@
-import { LEVEL_LABEL, STATUS_LABEL, programName, type Applicant, type Level, type Program, type Status } from './model';
+import { LEVEL_LABEL, STATUS_LABEL, firstChoice, programName, type Applicant, type Level, type Program, type Status } from './model';
 import { bangkokDateParts, parseIsoDate, thaiLongDate } from './thai';
 
 export type ExportPreset = 'full' | 'registry';
@@ -6,6 +6,11 @@ export type ExportPreset = 'full' | 'registry';
 export const EXPORT_PRESET_LABEL: Record<ExportPreset, string> = {
   full: 'รายชื่อผู้สมัครทั้งหมด (ทุกช่อง)',
   registry: 'นำเข้างานทะเบียน (ผู้มอบตัวแล้ว)',
+};
+
+const departmentOf = (a: Applicant, programs: readonly Program[]) => {
+  const track = a.level === 'pvc' ? 'pvc' : 'pvs';
+  return programs.find((p) => p.track === track && p.code === firstChoice(a))?.department ?? '';
 };
 
 type Column = [header: string, value: (a: Applicant, programs: readonly Program[]) => string];
@@ -26,6 +31,7 @@ const FULL: Column[] = [
   ['ปีการศึกษา', (a) => String(a.academicYear)],
   ['สถานะ', (a) => STATUS_LABEL[a.status as Status] ?? a.status],
   ['ประเภทการสมัคร', (a) => LEVEL_LABEL[a.level as Level] ?? a.level],
+  ['แผนกวิชา', (a, p) => departmentOf(a, p)],
   ['สาขา ปวส.', (a, p) => programName(p, a.programPvs)],
   ['สาขา ปวช. ลำดับ 1', (a, p) => programName(p, a.programPvc1)],
   ['สาขา ปวช. ลำดับ 2', (a, p) => programName(p, a.programPvc2)],
@@ -115,4 +121,32 @@ export function toCsv(headers: readonly string[], rows: readonly (readonly strin
     return /[",\r\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
   };
   return `﻿${[headers, ...rows].map((row) => row.map(cell).join(',')).join('\r\n')}\r\n`;
+}
+
+/**
+ * แยกเป็นชีตละสาขา (ตามสาขาอันดับ 1) ข้างในเรียงตามโรงเรียนเดิม แล้วตามชื่อ
+ * ชื่อชีตของ Excel ยาวได้ไม่เกิน 31 ตัวอักษรและห้ามซ้ำ จึงตัดและเติมเลขกำกับเมื่อชนกัน
+ */
+export function exportByProgram(applicants: readonly Applicant[], programs: readonly Program[]): { name: string; headers: string[]; rows: string[][] }[] {
+  const groups = new Map<string, Applicant[]>();
+  for (const a of applicants) {
+    const track = a.level === 'pvc' ? 'pvc' : 'pvs';
+    const key = `${track}:${firstChoice(a)}`;
+    groups.set(key, [...(groups.get(key) ?? []), a]);
+  }
+  const used = new Set<string>();
+  return [...groups.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, list]) => {
+      const [track, code] = key.split(':') as ['pvc' | 'pvs', string];
+      const base = `${track === 'pvc' ? 'ปวช' : 'ปวส'} ${programs.find((p) => p.track === track && p.code === code)?.name ?? code}`.slice(0, 28);
+      let name = base;
+      for (let n = 2; used.has(name); n += 1) name = `${base.slice(0, 26)} ${n}`;
+      used.add(name);
+      const sorted = [...list].sort((x, y) => x.schoolName.localeCompare(y.schoolName, 'th') || x.firstName.localeCompare(y.firstName, 'th'));
+      const table = exportTable(sorted, programs, 'full');
+      // exportTable เรียงตามเลขที่ใบสมัคร — ใช้ลำดับโรงเรียนของเราแทน
+      const byNo = new Map(table.rows.map((row) => [row[0], row]));
+      return { name, headers: table.headers, rows: sorted.map((a) => byNo.get(a.appNo)!) };
+    });
 }
