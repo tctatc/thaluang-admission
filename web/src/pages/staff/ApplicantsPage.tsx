@@ -104,12 +104,12 @@ export function ApplicantsPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <h1 className="text-2xl font-bold text-brand-deep">ผู้สมัคร <span className="text-lg font-normal text-ink-muted" data-numeric>({filtered.length.toLocaleString('th-TH')} คน)</span></h1>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="secondary" onClick={() => download('full', 'xlsx')} disabled={!filtered.length} icon={<FileSpreadsheet className="size-4" aria-hidden="true" />}>Excel ตามตัวกรอง</Button>
-          <Button variant="secondary" onClick={downloadByProgram} disabled={!filtered.length} title="หนึ่งชีตต่อหนึ่งสาขา เรียงตามโรงเรียนเดิม" icon={<FileSpreadsheet className="size-4" aria-hidden="true" />}>Excel แยกชีตตามสาขา</Button>
+        <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
+          <Button variant="secondary" onClick={() => download('full', 'xlsx')} disabled={!filtered.length} icon={<FileSpreadsheet className="size-4" aria-hidden="true" />}>Excel<span className="hidden sm:inline"> ตามตัวกรอง</span></Button>
+          <Button variant="secondary" onClick={downloadByProgram} disabled={!filtered.length} title="หนึ่งชีตต่อหนึ่งสาขา เรียงตามโรงเรียนเดิม" icon={<FileSpreadsheet className="size-4" aria-hidden="true" />}><span className="sm:hidden">Excel แยกสาขา</span><span className="hidden sm:inline">Excel แยกชีตตามสาขา</span></Button>
           <Button variant="secondary" onClick={() => download('full', 'csv')} disabled={!filtered.length} icon={<FileText className="size-4" aria-hidden="true" />}>CSV</Button>
           <Button onClick={() => download('registry', 'xlsx')} disabled={!enrolledCount} title="เฉพาะผู้ที่มอบตัวแล้ว รูปแบบสำหรับนำเข้างานทะเบียน"
-            icon={<FileSpreadsheet className="size-4" aria-hidden="true" />}>ส่งออกงานทะเบียน ({enrolledCount})</Button>
+            icon={<FileSpreadsheet className="size-4" aria-hidden="true" />}><span className="sm:hidden">งานทะเบียน ({enrolledCount})</span><span className="hidden sm:inline">ส่งออกงานทะเบียน ({enrolledCount})</span></Button>
         </div>
       </div>
 

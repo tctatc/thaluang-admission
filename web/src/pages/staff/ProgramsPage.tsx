@@ -68,7 +68,7 @@ export function ProgramsPage() {
       {message && <Alert tone={message.tone}>{message.text}</Alert>}
       {dirty && !message && <Alert tone="warn">มีการแก้ไขที่ยังไม่บันทึก</Alert>}
       {dirty && (
-        <div className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+3.5rem)] z-20 border-t border-line bg-surface/95 px-4 py-2 backdrop-blur md:hidden">
+        <div className="above-bottom-nav fixed inset-x-0 z-20 border-t border-line bg-surface/95 px-4 py-2 backdrop-blur md:hidden">
           <Button loading={busy} onClick={save} className="w-full" icon={<Save className="size-4" aria-hidden="true" />}>บันทึกการแก้ไข</Button>
         </div>
       )}

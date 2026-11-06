@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Download, Share } from 'lucide-react';
-import { cn } from './ui';
+import { sheetIconClass, sheetRowClass } from './MobileNav';
 
 interface InstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -52,10 +52,12 @@ export function InstallApp({ variant = 'link', className }: { variant?: 'link' |
   return (
     <div className={className}>
       <button type="button" onClick={install} aria-expanded={ios ? hint : undefined}
-        className={variant === 'sheet'
-          ? 'flex min-h-12 w-full items-center gap-3 rounded-control px-3 text-base text-ink hover:bg-sunken'
+        className={variant === 'sheet' ? `${sheetRowClass} text-ink`
           : 'inline-flex min-h-11 items-center gap-2 rounded-control px-3 text-[15px] font-medium text-brand transition-colors hover:bg-brand-soft'}>
-        <Download className={cn(variant === 'sheet' ? 'size-5' : 'size-4', 'text-brand')} aria-hidden="true" />ติดตั้งเป็นแอปบนมือถือ
+        {variant === 'sheet'
+          ? <span aria-hidden="true" className={sheetIconClass}><Download className="size-5" /></span>
+          : <Download className="size-4" aria-hidden="true" />}
+        ติดตั้งเป็นแอปบนมือถือ
       </button>
       {hint && (
         <p className="mb-1 flex flex-wrap items-center gap-1 px-3 text-sm text-ink-muted">

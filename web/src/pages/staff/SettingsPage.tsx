@@ -79,7 +79,7 @@ export function SettingsPage() {
       </Panel>
 
       {message && <Alert tone={message.tone}>{message.text}</Alert>}
-      <div className="sticky bottom-0 -mx-4 border-t border-line bg-canvas/95 px-4 py-3 backdrop-blur sm:mx-0 sm:rounded-card sm:border">
+      <div className="above-bottom-nav sticky -mx-4 border-t border-line bg-canvas/95 px-4 py-3 backdrop-blur sm:mx-0 sm:rounded-card sm:border">
         <Button type="submit" loading={busy} disabled={Boolean(patternProblem)}>บันทึกการตั้งค่า</Button>
       </div>
     </form>

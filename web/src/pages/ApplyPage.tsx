@@ -227,7 +227,7 @@ export function ApplyPage() {
             {errors.consent && <p className="mt-1 text-sm text-danger">{errors.consent}</p>}
           </Section>
 
-          <div className="no-print sticky bottom-0 z-10 -mx-4 flex flex-wrap items-center gap-3 border-t border-line bg-canvas/95 px-4 py-3 backdrop-blur sm:mx-0 sm:rounded-card sm:border sm:px-5">
+          <div className="no-print above-bottom-nav sticky z-10 -mx-4 flex flex-wrap items-center gap-3 border-t border-line bg-canvas/95 px-4 py-3 backdrop-blur sm:mx-0 sm:rounded-card sm:border sm:px-5">
             <Button type="submit" loading={sending} icon={<Send className="size-4" aria-hidden="true" />} className="min-h-12 px-6 text-base">ส่งใบสมัคร</Button>
             <Button variant="secondary" className="xl:hidden" onClick={() => setShowPreview((v) => !v)} icon={showPreview ? <EyeOff className="size-4" aria-hidden="true" /> : <Eye className="size-4" aria-hidden="true" />}>
               {showPreview ? 'ซ่อนตัวอย่าง' : 'ดูใบสมัคร'}
