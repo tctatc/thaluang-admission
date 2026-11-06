@@ -1,7 +1,7 @@
 # เผยแพร่ระบบรับสมัครขึ้น GitHub Pages
 
-repo: https://github.com/ssrenz1717-code/thaluang-admission
-หน้าเว็บ: https://ssrenz1717-code.github.io/thaluang-admission/
+repo: https://github.com/tctatc/thaluang-admission
+หน้าเว็บ: https://tctatc.github.io/thaluang-admission/
 
 ทุกครั้งที่ push เข้า branch `main` จะมี GitHub Actions (`.github/workflows/deploy-pages.yml`) รันเทส build หน้าเว็บ แล้วเผยแพร่ให้เองภายในราว 2 นาที ดูความคืบหน้าได้ที่แท็บ **Actions** ของ repo
 
@@ -34,7 +34,7 @@ git push
    - Value: URL `/exec` ที่ได้
 3. เข้าแท็บ **Actions** เลือก workflow "ตรวจและเผยแพร่หน้าเว็บขึ้น GitHub Pages" แล้วกด **Run workflow** (หรือ push อะไรก็ได้หนึ่งครั้ง)
 4. เปิดหน้าเว็บ แถบเหลือง "โหมดสาธิต" ต้องหายไป
-5. ใส่ `PUBLIC_SITE_URL` = `https://ssrenz1717-code.github.io/thaluang-admission/` ใน Script Properties ของ Apps Script เพื่อให้ลิงก์ในอีเมลถึงผู้สมัครถูกต้อง
+5. ใส่ `PUBLIC_SITE_URL` = `https://tctatc.github.io/thaluang-admission/` ใน Script Properties ของ Apps Script เพื่อให้ลิงก์ในอีเมลถึงผู้สมัครถูกต้อง
 
 ใช้ Variables ไม่ใช่ Secrets เพราะ URL นี้ถูกฝังในหน้าเว็บที่ทุกคนดาวน์โหลดอยู่แล้ว ความปลอดภัยของระบบอยู่ที่การตรวจสิทธิ์ฝั่ง Apps Script
 

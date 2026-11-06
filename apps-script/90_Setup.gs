@@ -20,6 +20,9 @@ function setupSystem() {
     if (!getProp_(key)) props.setProperty(key, Utilities.getUuid() + Utilities.getUuid());
   });
 
+  // ลิงก์หน้าเว็บที่แนบในอีเมลถึงผู้สมัคร (ย้ายที่ฝากเว็บเมื่อไหร่ แก้ค่านี้ใน Script Properties)
+  if (!getProp_(PROP_PUBLIC_SITE_URL)) props.setProperty(PROP_PUBLIC_SITE_URL, 'https://tctatc.github.io/thaluang-admission/');
+
   if (!getProp_(PROP_SPREADSHEET_ID)) {
     const book = SpreadsheetApp.create('ระบบรับสมัครเรียน - ข้อมูล');
     props.setProperty(PROP_SPREADSHEET_ID, book.getId());
