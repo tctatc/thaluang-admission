@@ -49,7 +49,7 @@ export function SettingsPage() {
   );
 
   return (
-    <form onSubmit={save} className="max-w-3xl space-y-5">
+    <form onSubmit={save} className="mx-auto max-w-3xl space-y-5">
       <h1 className="text-2xl font-bold text-brand-deep">ตั้งค่าการรับสมัครและข้อความหน้าเว็บ</h1>
 
       <Panel title="การรับสมัคร">

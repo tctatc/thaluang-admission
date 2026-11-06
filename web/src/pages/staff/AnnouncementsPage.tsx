@@ -50,7 +50,7 @@ export function AnnouncementsPage() {
   };
 
   return (
-    <div className="max-w-3xl space-y-5">
+    <div className="mx-auto max-w-3xl space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-brand-deep">ประกาศประชาสัมพันธ์</h1>

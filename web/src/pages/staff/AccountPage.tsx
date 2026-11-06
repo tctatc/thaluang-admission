@@ -42,7 +42,7 @@ export function AccountPage() {
   };
 
   return (
-    <form onSubmit={save} className="max-w-md space-y-5" noValidate>
+    <form onSubmit={save} className="mx-auto max-w-md space-y-5" noValidate>
       <div>
         <h1 className="text-2xl font-bold text-brand-deep">บัญชีของฉัน</h1>
         <p className="text-sm text-ink-muted">{staff?.displayName} · ชื่อผู้ใช้ <span className="font-medium text-ink">{staff?.username}</span></p>
