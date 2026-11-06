@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
-import { BarChart3, FlaskConical, LogOut, Settings as SettingsIcon, Users } from 'lucide-react';
+import { BarChart3, ExternalLink, FlaskConical, LogOut, Settings as SettingsIcon, Users } from 'lucide-react';
 import { api, apiMode, type PublicConfig } from '../lib/api';
 import { cn, Loading } from '../components/ui';
 import { HomePage } from '../pages/HomePage';
@@ -118,6 +118,9 @@ function StaffLayout() {
             {staff.role === 'admin' && <NavLink to="/staff/settings" className={link}><SettingsIcon className="size-4" aria-hidden="true" />ตั้งค่า</NavLink>}
           </nav>
           <div className="flex items-center gap-2 text-sm">
+            <Link to="/" className="inline-flex min-h-11 items-center gap-1.5 rounded-control px-3 text-ink-inverse/80 hover:bg-ink-inverse/10 hover:text-ink-inverse">
+              <ExternalLink className="size-4" aria-hidden="true" />หน้าเว็บผู้สมัคร
+            </Link>
             <span className="text-ink-inverse/80">{staff.displayName}</span>
             <button type="button" onClick={logout} className="inline-flex min-h-11 items-center gap-1.5 rounded-control px-3 text-ink-inverse/80 hover:bg-ink-inverse/10 hover:text-ink-inverse">
               <LogOut className="size-4" aria-hidden="true" />ออกจากระบบ

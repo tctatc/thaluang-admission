@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
-import { LogIn } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ArrowLeft, LogIn } from 'lucide-react';
 import { useStaff } from '../../app/staff';
 import { Alert, Button, TextField } from '../../components/ui';
 import { apiMode, errorMessage } from '../../lib/api';
@@ -25,7 +26,10 @@ export function LoginPage() {
   };
 
   return (
-    <div className="grid min-h-dvh place-items-center bg-brand-deep px-4 py-10">
+    <div className="relative grid min-h-dvh place-items-center bg-brand-deep px-4 py-16">
+      <Link to="/" className="absolute left-4 top-4 inline-flex min-h-11 items-center gap-2 rounded-control px-3 text-ink-inverse/80 transition-colors hover:bg-ink-inverse/10 hover:text-ink-inverse">
+        <ArrowLeft className="size-4" aria-hidden="true" />กลับหน้าหลัก
+      </Link>
       <div className="w-full max-w-sm">
         <img src={`${import.meta.env.BASE_URL}college-logo.png`} alt="" className="mx-auto size-20 rounded-full bg-surface p-1" />
         <h1 className="mt-4 text-center text-2xl font-bold text-ink-inverse">งานรับสมัคร (เจ้าหน้าที่)</h1>
