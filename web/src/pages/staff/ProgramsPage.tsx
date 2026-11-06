@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { Plus, Save, Trash2, Undo2 } from 'lucide-react';
 import { countFirstChoice, departmentsOf } from '@shared/admin';
 import type { Program } from '@shared/model';
+import { toArabicDigits } from '@shared/thai';
 import { useStaff } from '../../app/staff';
 import { Alert, Button, cn } from '../../components/ui';
 import { api, errorMessage } from '../../lib/api';
@@ -107,9 +108,9 @@ export function ProgramsPage() {
                             <option value="pvc">ปวช.</option><option value="pvs">ปวส.</option>
                           </select>
                         </td>
-                        <td className="px-3 py-2"><input aria-label="รหัสสาขา" inputMode="numeric" maxLength={2} className={cell} value={row.code} onChange={(e) => set(index, { code: e.target.value })} /></td>
+                        <td className="px-3 py-2"><input aria-label="รหัสสาขา" inputMode="numeric" maxLength={2} className={cell} value={row.code} onChange={(e) => set(index, { code: toArabicDigits(e.target.value) })} /></td>
                         <td className="px-3 py-2"><input aria-label="ชื่อสาขา" className={cell} value={row.name} onChange={(e) => set(index, { name: e.target.value })} /></td>
-                        <td className="px-3 py-2"><input aria-label="จำนวนรับ" inputMode="numeric" maxLength={4} className={cell} value={String(row.quota)} onChange={(e) => set(index, { quota: Number(e.target.value.replace(/\D/g, '')) || 0 })} /></td>
+                        <td className="px-3 py-2"><input aria-label="จำนวนรับ" inputMode="numeric" maxLength={4} className={cell} value={String(row.quota)} onChange={(e) => set(index, { quota: Number(toArabicDigits(e.target.value).replace(/\D/g, '')) || 0 })} /></td>
                         <td className="px-3 py-2" data-numeric>
                           <span className={cn('font-medium', full ? 'text-danger' : 'text-ink')}>{count}</span>
                           {row.quota > 0 && <span className="text-ink-muted"> / {row.quota}{full ? ' (เต็ม)' : ''}</span>}

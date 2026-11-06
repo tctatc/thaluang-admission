@@ -1,7 +1,7 @@
 import { useId, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from 'react';
 import { AlertCircle, CheckCircle2, Info, Loader2, TriangleAlert } from 'lucide-react';
 import { STATUS_LABEL, type Status } from '@shared/model';
-import { THAI_MONTHS, parseIsoDate } from '@shared/thai';
+import { THAI_MONTHS, parseIsoDate, toArabicDigits } from '@shared/thai';
 
 export const cn = (...parts: (string | false | null | undefined)[]) => parts.filter(Boolean).join(' ');
 
@@ -60,7 +60,23 @@ export function TextField({ label, error, hint, required, className, ...input }:
 }) {
   return (
     <Field label={label} error={error} hint={hint} required={required ?? false} className={className ?? ''}>
-      {(props) => <input {...input} {...props} required={required} />}
+      {(props) => (
+        <input
+          {...input}
+          {...props}
+          required={required}
+          // แป้นภาษาไทยพิมพ์ตัวเลขเป็น ๐-๙ — แปลงเป็นอารบิกทันทีที่พิมพ์ ระบบใช้เลขอารบิกทั้งหมด
+          onChange={(event) => {
+            const arabic = toArabicDigits(event.target.value);
+            if (arabic !== event.target.value) {
+              const caret = event.target.selectionStart;
+              event.target.value = arabic;
+              if (caret !== null && event.target.type !== 'email') event.target.setSelectionRange(caret, caret);
+            }
+            input.onChange?.(event);
+          }}
+        />
+      )}
     </Field>
   );
 }
