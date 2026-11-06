@@ -1,0 +1,136 @@
+@import 'tailwindcss';
+
+/*
+ * โทนแดง-ทองจากตราวิทยาลัย
+ * แดงเข้มใช้กับปุ่ม/ลิงก์/หัวข้อ (บนพื้นขาว contrast ≈ 8:1) ทองใช้เป็นเส้นและพื้นเน้น ไม่ใช้เป็นสีตัวอักษรบนพื้นขาว
+ * สถานะใช้สีคู่กับข้อความเสมอ ไม่สื่อความหมายด้วยสีอย่างเดียว
+ */
+@theme {
+  --font-sans: 'IBM Plex Sans Thai', ui-sans-serif, system-ui, sans-serif;
+  /* แบบฟอร์มราชการ: ใกล้ TH SarabunPSK ของต้นฉบับ */
+  --font-form: 'Sarabun', 'TH SarabunPSK', 'TH Sarabun New', serif;
+
+  --color-canvas: hsl(36 30% 96%);
+  --color-surface: hsl(0 0% 100%);
+  --color-sunken: hsl(36 24% 93%);
+  --color-line: hsl(30 14% 86%);
+  --color-line-strong: hsl(30 10% 74%);
+
+  --color-ink: hsl(350 22% 13%);
+  --color-ink-muted: hsl(350 8% 38%);
+  --color-ink-inverse: hsl(0 0% 100%);
+
+  --color-brand: hsl(352 70% 36%);
+  --color-brand-hover: hsl(352 72% 30%);
+  --color-brand-active: hsl(352 74% 25%);
+  --color-brand-soft: hsl(352 70% 96%);
+  --color-brand-border: hsl(352 50% 86%);
+  --color-brand-deep: hsl(350 60% 17%);
+
+  --color-gold: hsl(42 92% 54%);
+  --color-gold-soft: hsl(44 90% 92%);
+  --color-gold-ink: hsl(36 80% 26%);
+
+  --color-ok: hsl(150 60% 27%);
+  --color-ok-soft: hsl(150 50% 94%);
+  --color-warn: hsl(30 85% 30%);
+  --color-warn-soft: hsl(40 95% 92%);
+  --color-danger: hsl(0 70% 40%);
+  --color-danger-soft: hsl(0 80% 96%);
+  --color-info: hsl(215 60% 34%);
+  --color-info-soft: hsl(215 70% 95%);
+
+  --radius-card: 14px;
+  --radius-control: 10px;
+
+  --shadow-card: 0 1px 2px hsl(350 30% 15% / 0.05), 0 4px 14px -6px hsl(350 30% 15% / 0.12);
+  --shadow-paper: 0 2px 4px hsl(350 30% 15% / 0.06), 0 18px 40px -18px hsl(350 30% 15% / 0.35);
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@layer base {
+  html {
+    overflow-x: clip;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    accent-color: var(--color-brand);
+    caret-color: var(--color-brand);
+  }
+  body {
+    overflow-x: clip;
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    /* ภาษาไทยไม่มีช่องว่างระหว่างคำ ความสูงบรรทัดต้องมากกว่าภาษาอังกฤษจึงอ่านสบาย */
+    line-height: 1.65;
+  }
+  h1, h2, h3 { text-wrap: balance; line-height: 1.3; font-weight: 600; }
+  p { text-wrap: pretty; }
+  table, [data-numeric] { font-variant-numeric: tabular-nums; }
+  :focus-visible { outline: 3px solid var(--color-gold); outline-offset: 2px; border-radius: 6px; }
+  ::selection { background: var(--color-gold-soft); color: var(--color-brand-deep); }
+  button:not(:disabled), [role='button'], label:has(> input[type='checkbox']), label:has(> input[type='radio']) { cursor: pointer; }
+  a { text-underline-offset: 3px; }
+  * { scrollbar-color: var(--color-line-strong) transparent; }
+}
+
+@layer utilities {
+  .enter { animation: rise 380ms var(--ease-out) backwards; }
+  .tick { animation: tick 500ms var(--ease-out) backwards; }
+}
+
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+@keyframes tick { from { opacity: 0; transform: scale(0.6) rotate(-8deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; }
+}
+
+/* ---------------- แผ่นเอกสาร A4 (ขาวดำ เหมือนกระดาษต้นฉบับ) ---------------- */
+
+@page { size: A4 portrait; margin: 0; }
+
+.sheet {
+  position: relative;
+  box-sizing: border-box;
+  width: 210mm;
+  height: 297mm;
+  overflow: hidden;
+  background: #fff;
+  color: #000;
+  font-family: var(--font-form);
+  font-size: 12.5pt;
+  line-height: 1.2;
+}
+.sheet p { margin: 0; }
+/* บรรทัดของแบบฟอร์ม วางตามตำแหน่งที่วัดจากต้นฉบับ (หน่วย mm) */
+.sheet-row { position: absolute; display: flex; align-items: baseline; white-space: nowrap; gap: 0 1.2mm; }
+.sheet-fill {
+  display: inline-block;
+  flex: none;
+  border-bottom: 1.1px dotted #000;
+  padding: 0 1mm 0.2mm;
+  min-height: 1.25em;
+  text-align: center;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.sheet-fill.grow { flex: 1 1 auto; min-width: 8mm; }
+.sheet-fill.left { text-align: left; }
+.sheet-box { display: inline-grid; place-items: center; width: 3.8mm; height: 3.8mm; border: 1.3px solid #000; box-shadow: 0.5mm 0.5mm 0 #000; vertical-align: -0.6mm; }
+.sheet-box svg { width: 3.4mm; height: 3.4mm; }
+
+.print-only { display: none; }
+
+@media print {
+  html, body { background: #fff !important; }
+  body * { visibility: hidden !important; }
+  .print-area, .print-area * { visibility: visible !important; }
+  .print-area { position: absolute !important; inset: 0 auto auto 0 !important; }
+  .print-scale { transform: none !important; height: auto !important; }
+  .print-area .sheet { box-shadow: none !important; }
+  .no-print { display: none !important; }
+  /* แผ่นเดียวต่อหน้า และตัดส่วนที่ซ่อนไว้ไม่ให้เกิดหน้าว่างต่อท้าย */
+  html:has(.print-area), html:has(.print-area) body { height: 297mm !important; overflow: hidden !important; }
+}

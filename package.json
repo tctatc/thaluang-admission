@@ -1,0 +1,22 @@
+{
+  "name": "thaluang-admission",
+  "private": true,
+  "version": "0.1.0",
+  "description": "ระบบรับสมัครเรียนออนไลน์ วิทยาลัยเทคนิคท่าหลวงซิเมนต์ไทยอนุสรณ์",
+  "engines": {
+    "node": ">=22"
+  },
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.shared.json",
+    "build:domain": "esbuild shared/index.ts --bundle --format=iife --global-name=Domain --target=es2019 --platform=neutral --outfile=apps-script/Domain.gs",
+    "verify": "npm run typecheck && npm test"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "esbuild": "^0.27.3",
+    "typescript": "5.9.3",
+    "vitest": "5.0.5"
+  }
+}
