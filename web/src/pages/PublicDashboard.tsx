@@ -34,7 +34,10 @@ export function PublicDashboard() {
         // หน้าแรกต้องเปิดได้เสมอแม้ดึงยอดไม่สำเร็จ ส่วนนี้แค่ไม่แสดง
       }
     };
-    void refresh();
+    // ครั้งแรกยิงสองคำสั่งพร้อมกัน: Apps Script ตอบคำสั่งละ ~2 วินาที ถ้ารอต่อกันยอดจะขึ้นช้าเป็นเท่าตัว
+    Promise.all([api.version(), api.publicStats()])
+      .then(([next, data]) => { version = next.dataVersion; if (alive) setStats(data); })
+      .catch(() => {});
     const timer = window.setInterval(() => { if (!document.hidden) void refresh(); }, POLL_MS);
     return () => { alive = false; window.clearInterval(timer); };
   }, []);
