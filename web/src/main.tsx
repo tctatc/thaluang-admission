@@ -15,3 +15,10 @@ createRoot(container).render(
     </HashRouter>
   </StrictMode>,
 );
+
+// เว็บแอป: ติดตั้งลงหน้าจอโฮมได้ และเปิดหน้าแอปได้แม้เน็ตหลุด (เฉพาะไฟล์หน้าเว็บ ไม่เก็บข้อมูลผู้สมัคร)
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => { /* เบราว์เซอร์ไม่รองรับก็ใช้เป็นเว็บธรรมดา */ });
+  });
+}

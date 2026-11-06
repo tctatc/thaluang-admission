@@ -67,6 +67,11 @@ export function ProgramsPage() {
       </div>
       {message && <Alert tone={message.tone}>{message.text}</Alert>}
       {dirty && !message && <Alert tone="warn">มีการแก้ไขที่ยังไม่บันทึก</Alert>}
+      {dirty && (
+        <div className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+3.5rem)] z-20 border-t border-line bg-surface/95 px-4 py-2 backdrop-blur md:hidden">
+          <Button loading={busy} onClick={save} className="w-full" icon={<Save className="size-4" aria-hidden="true" />}>บันทึกการแก้ไข</Button>
+        </div>
+      )}
 
       <datalist id="departments">{departments.map((d) => <option key={d} value={d} />)}</datalist>
 
@@ -82,7 +87,48 @@ export function ProgramsPage() {
                 {department && <Button variant="ghost" className="min-h-9 px-2 text-sm" onClick={() => add(department)} icon={<Plus className="size-4" aria-hidden="true" />}>เพิ่มสาขาในประเภทวิชานี้</Button>}
               </div>
             </div>
-            <div className="overflow-x-auto">
+            {/* มือถือ: หนึ่งการ์ดต่อสาขา ช่องเดียวกับตาราง */}
+            <ul className="divide-y divide-line md:hidden">
+              {items.map(({ row, index }) => {
+                const count = countFirstChoice(applicants, row, year);
+                const full = row.quota > 0 && count >= row.quota;
+                return (
+                  <li key={index} className={cn('grid grid-cols-[5.5rem_4.5rem_1fr] gap-2 p-4', !row.active && 'bg-sunken/60')}>
+                    <label className="col-span-3 text-sm text-ink-muted">ชื่อสาขาวิชา
+                      <input className={cn(cell, 'mt-1')} value={row.name} onChange={(e) => set(index, { name: e.target.value })} />
+                    </label>
+                    <label className="text-sm text-ink-muted">ระดับ
+                      <select className={cn(cell, 'mt-1')} value={row.track} onChange={(e) => set(index, { track: e.target.value as Program['track'] })}>
+                        <option value="pvc">ปวช.</option><option value="pvs">ปวส.</option>
+                      </select>
+                    </label>
+                    <label className="text-sm text-ink-muted">รหัส
+                      <input inputMode="numeric" maxLength={2} className={cn(cell, 'mt-1')} value={row.code} onChange={(e) => set(index, { code: toArabicDigits(e.target.value) })} />
+                    </label>
+                    <label className="min-w-0 text-sm text-ink-muted">ประเภทวิชา
+                      <input list="departments" className={cn(cell, 'mt-1')} value={row.department} onChange={(e) => set(index, { department: e.target.value })} />
+                    </label>
+                    <label className="text-sm text-ink-muted">จำนวนรับ
+                      <input inputMode="numeric" maxLength={4} className={cn(cell, 'mt-1')} value={String(row.quota)} onChange={(e) => set(index, { quota: Number(toArabicDigits(e.target.value).replace(/\D/g, '')) || 0 })} />
+                    </label>
+                    <p className="col-span-2 self-end pb-2 text-[15px]" data-numeric>
+                      สมัครแล้ว <span className={cn('font-semibold', full ? 'text-danger' : 'text-ink')}>{count}</span>
+                      {row.quota > 0 && <span className="text-ink-muted"> / {row.quota}{full ? ' (เต็ม)' : ''}</span>}
+                    </p>
+                    <div className="col-span-3 flex items-center justify-between">
+                      <label className="inline-flex min-h-11 items-center gap-2 text-[15px]">
+                        <input type="checkbox" className="size-5" checked={row.active} onChange={(e) => set(index, { active: e.target.checked })} />{row.active ? 'เปิดรับ' : 'ปิดรับ'}
+                      </label>
+                      <button type="button" disabled={count > 0} onClick={() => setRows((list) => list.filter((_, i) => i !== index))}
+                        className="inline-flex min-h-11 items-center gap-1.5 rounded-[8px] px-3 text-danger hover:bg-danger-soft disabled:opacity-30">
+                        <Trash2 className="size-4" aria-hidden="true" />{count ? 'มีผู้สมัครแล้ว ลบไม่ได้' : 'ลบสาขา'}
+                      </button>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+            <div className="hidden overflow-x-auto md:block">
               <table className="w-full min-w-[860px] text-left text-[15px]">
                 <thead className="text-sm text-ink-muted">
                   <tr>

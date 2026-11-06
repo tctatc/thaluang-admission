@@ -51,7 +51,7 @@ export function ApplicantDetailPage() {
         </div>
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <div className="no-print space-y-5">
           {editing ? <EditApplicantPanel applicant={applicant} onDone={(next) => { if (next) replace(next); setEditing(false); }} /> : (
           <Panel title="ข้อมูลผู้สมัคร" action={<Button variant="ghost" onClick={() => setEditing(true)} icon={<Pencil className="size-4" aria-hidden="true" />}>แก้ไขข้อมูล</Button>}>

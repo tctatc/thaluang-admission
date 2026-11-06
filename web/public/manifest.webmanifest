@@ -1,0 +1,23 @@
+{
+  "name": "รับสมัครเรียน วท.ท่าหลวงซิเมนต์ไทยอนุสรณ์",
+  "short_name": "รับสมัคร ทล.",
+  "description": "สมัครเรียน ปวช. ปวส. ตรวจสถานะ พิมพ์ใบสมัคร และงานรับสมัครของเจ้าหน้าที่",
+  "lang": "th",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#5c0f1a",
+  "background_color": "#f8f5f0",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "สมัครเรียน", "url": "./#/apply", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
+    { "name": "ตรวจสถานะ / พิมพ์ใบสมัคร", "url": "./#/status", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
+    { "name": "งานรับสมัคร (เจ้าหน้าที่)", "url": "./#/staff", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] }
+  ]
+}

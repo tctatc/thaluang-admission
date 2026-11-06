@@ -73,6 +73,10 @@
   button:not(:disabled), [role='button'], label:has(> input[type='checkbox']), label:has(> input[type='radio']) { cursor: pointer; }
   a { text-underline-offset: 3px; }
   * { scrollbar-color: var(--color-line-strong) transparent; }
+  /* ข้อความ sr-only (position:absolute) ในตารางที่เลื่อนข้างได้ ต้องไม่หลุดออกมาดันหน้าให้กว้างเกินจอ */
+  .overflow-x-auto { position: relative; }
+  /* iPhone ซูมหน้าเองเมื่อแตะช่องที่ตัวอักษรเล็กกว่า 16px — จอสัมผัสใช้ 16px เสมอ */
+  @media (pointer: coarse) { input, select, textarea { font-size: max(16px, 1em); } }
 }
 
 @layer utilities {
@@ -89,6 +93,10 @@
     .lift:hover { transform: translateY(-3px); box-shadow: var(--shadow-paper); }
   }
 }
+
+/* แผ่นเมนูเลื่อนขึ้นจากขอบล่าง */
+.sheet-up { animation: sheet-up 260ms var(--ease-out) backwards; }
+@keyframes sheet-up { from { transform: translateY(24px); opacity: 0; } }
 
 @keyframes grow-x { from { transform: scaleX(0); } }
 

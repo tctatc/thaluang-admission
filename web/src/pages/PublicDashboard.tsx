@@ -255,7 +255,7 @@ function Ranking({ programs }: { programs: ProgramCount[] }) {
   const max = Math.max(1, ...programs.map((p) => p.value));
   if (programs.length === 0) return <p className="py-6 text-center text-ink-muted">ยังไม่มีสาขาในระดับนี้</p>;
   return (
-    <ol className="group/rank grid gap-x-10 gap-y-3.5 md:grid-cols-2">
+    <ol className="group/rank grid grid-cols-[minmax(0,1fr)] gap-x-10 gap-y-3.5 md:grid-cols-2">
       {programs.map((program, index) => {
         const first = index === 0 && program.value > 0;
         return (
@@ -293,9 +293,41 @@ function Ranking({ programs }: { programs: ProgramCount[] }) {
 export function QuotaTable({ programs }: { programs: ProgramCount[] }) {
   const departments = [...new Set(programs.map((p) => p.department || 'อื่น ๆ'))].sort((a, b) => a.localeCompare(b, 'th'));
   if (programs.length === 0) return <p className="py-6 text-center text-ink-muted">ยังไม่มีสาขาที่เปิดรับ</p>;
+  const rows = (department: string) => programs.filter((p) => (p.department || 'อื่น ๆ') === department)
+    .sort((a, b) => a.track.localeCompare(b.track) || a.code.localeCompare(b.code))
+    .map((p) => {
+      const left = p.quota > 0 ? Math.max(0, p.quota - p.value) : null;
+      const ratio = p.quota > 0 ? Math.min(1, p.value / p.quota) : 0;
+      const state = p.quota === 0 ? 'open' : p.value >= p.quota ? 'full' : ratio >= 0.8 ? 'near' : 'open';
+      return { p, left, ratio, state };
+    });
+  const remaining = (left: number | null, state: string) => left === null ? '–' : state === 'full'
+    ? <span className="rounded-full bg-danger-soft px-2 py-0.5 text-sm font-medium text-danger">เต็มแล้ว</span>
+    : <span className={state === 'near' ? 'font-semibold text-warn' : 'font-semibold text-ok'}>{left}{state === 'near' ? ' (ใกล้เต็ม)' : ''}</span>;
   return (
-    <div className="-mx-5 overflow-x-auto sm:mx-0">
-      <table className="w-full min-w-[600px] text-left text-[15px]">
+    <>
+    {/* มือถือ: รายการซ้อนกัน ชื่อสาขาได้เต็มบรรทัด ตัวเลขอยู่บรรทัดถัดไป */}
+    <div className="-mx-5 sm:hidden">
+      {departments.map((department) => (
+        <section key={department}>
+          <h3 className="bg-sunken px-5 py-2 text-sm font-semibold text-brand-deep">ประเภทวิชา{department}</h3>
+          <ul className="divide-y divide-line">
+            {rows(department).map(({ p, left, ratio, state }) => (
+              <li key={`${p.track}${p.code}`} className="px-5 py-3">
+                <p className="text-[15px]"><span className="text-xs text-ink-muted">{TRACK_SHORT[p.track]}</span> {p.name}</p>
+                <div className="mt-1 flex items-baseline justify-between gap-3 text-sm text-ink-muted" data-numeric>
+                  <span>สมัครแล้ว <strong className="text-base text-ink"><CountUp value={p.value} /></strong>{p.quota > 0 ? ` / รับ ${p.quota}` : ' (ไม่จำกัด)'}</span>
+                  <span>เหลือ {remaining(left, state)}</span>
+                </div>
+                {p.quota > 0 && <Meter ratio={ratio} state={state} className="mt-1.5 h-2" />}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
+    <div className="hidden sm:block">
+      <table className="w-full text-left text-[15px]">
         <thead className="border-b border-line text-sm text-ink-muted">
           <tr>
             <th className="px-5 py-2 font-medium sm:px-3">สาขาวิชา</th>
@@ -307,29 +339,16 @@ export function QuotaTable({ programs }: { programs: ProgramCount[] }) {
         </thead>
         {departments.map((department) => (
           <tbody key={department} className="divide-y divide-line">
-            <tr><th colSpan={5} className="bg-sunken px-5 py-2 text-sm font-semibold text-brand-deep sm:px-3">ประเภทวิชา{department}</th></tr>
-            {programs.filter((p) => (p.department || 'อื่น ๆ') === department)
-              .sort((a, b) => a.track.localeCompare(b.track) || a.code.localeCompare(b.code))
-              .map((p) => {
-                const left = p.quota > 0 ? Math.max(0, p.quota - p.value) : null;
-                const ratio = p.quota > 0 ? Math.min(1, p.value / p.quota) : 0;
-                const state = p.quota === 0 ? 'open' : p.value >= p.quota ? 'full' : ratio >= 0.8 ? 'near' : 'open';
+            <tr><th colSpan={5} className="bg-sunken px-3 py-2 text-sm font-semibold text-brand-deep">ประเภทวิชา{department}</th></tr>
+            {rows(department).map(({ p, left, ratio, state }) => {
                 return (
                   <tr key={`${p.track}${p.code}`}>
-                    <td className="px-5 py-2.5 sm:px-3"><span className="text-xs text-ink-muted">{TRACK_SHORT[p.track]}</span> {p.name}</td>
+                    <td className="px-3 py-2.5"><span className="text-xs text-ink-muted">{TRACK_SHORT[p.track]}</span> {p.name}</td>
                     <td className="px-3 py-2.5 text-right" data-numeric>{p.quota > 0 ? p.quota : 'ไม่จำกัด'}</td>
                     <td className="px-3 py-2.5 text-right font-medium" data-numeric><CountUp value={p.value} /></td>
-                    <td className="px-3 py-2.5 text-right" data-numeric>
-                      {left === null ? '–' : state === 'full'
-                        ? <span className="rounded-full bg-danger-soft px-2 py-0.5 text-sm font-medium text-danger">เต็มแล้ว</span>
-                        : <span className={state === 'near' ? 'font-semibold text-warn' : 'font-semibold text-ok'}>{left}{state === 'near' ? ' (ใกล้เต็ม)' : ''}</span>}
-                    </td>
+                    <td className="px-3 py-2.5 text-right" data-numeric>{remaining(left, state)}</td>
                     <td className="px-3 py-2.5">
-                      {p.quota > 0 && (
-                        <div className="h-2.5 overflow-hidden rounded-full bg-sunken ring-1 ring-inset ring-line" aria-hidden="true">
-                          <div className={cn('grow-x h-full origin-left rounded-full', state === 'full' ? 'bg-danger' : state === 'near' ? 'bg-gold' : 'bg-ok')} style={{ transform: `scaleX(${ratio})` }} />
-                        </div>
-                      )}
+                      {p.quota > 0 && <Meter ratio={ratio} state={state} className="h-2.5" />}
                     </td>
                   </tr>
                 );
@@ -337,6 +356,15 @@ export function QuotaTable({ programs }: { programs: ProgramCount[] }) {
           </tbody>
         ))}
       </table>
+    </div>
+    </>
+  );
+}
+
+function Meter({ ratio, state, className }: { ratio: number; state: string; className: string }) {
+  return (
+    <div className={cn('overflow-hidden rounded-full bg-sunken ring-1 ring-inset ring-line', className)} aria-hidden="true">
+      <div className={cn('grow-x h-full origin-left rounded-full', state === 'full' ? 'bg-danger' : state === 'near' ? 'bg-gold' : 'bg-ok')} style={{ transform: `scaleX(${ratio})` }} />
     </div>
   );
 }

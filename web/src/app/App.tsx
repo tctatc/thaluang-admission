@@ -1,9 +1,10 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Link, NavLink, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
-import { BarChart3, ExternalLink, FlaskConical, KeyRound, Layers, LogOut, Megaphone, QrCode, Settings as SettingsIcon, Users } from 'lucide-react';
+import { BarChart3, ExternalLink, FlaskConical, KeyRound, Layers, LogOut, Megaphone, Menu, QrCode, Settings as SettingsIcon, Users, X } from 'lucide-react';
 import { apiMode, type PublicConfig } from '../lib/api';
 import { useHome } from '../lib/publicData';
 import { cn, Loading } from '../components/ui';
+import { InstallApp } from '../components/InstallApp';
 import { HomePage } from '../pages/HomePage';
 import { ApplyPage } from '../pages/ApplyPage';
 import { StatusPage } from '../pages/StatusPage';
@@ -92,7 +93,10 @@ function PublicLayout() {
       <footer className="no-print border-t border-line bg-surface">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-4 text-sm text-ink-muted">
           <p>วิทยาลัยเทคนิคท่าหลวงซิเมนต์ไทยอนุสรณ์ · สังกัดสำนักงานคณะกรรมการการอาชีวศึกษา</p>
-          <Link to="/staff" className="underline hover:text-brand">สำหรับเจ้าหน้าที่</Link>
+          <div className="flex flex-wrap items-center gap-1">
+            <InstallApp />
+            <Link to="/staff" className="inline-flex min-h-11 items-center px-3 underline hover:text-brand">สำหรับเจ้าหน้าที่</Link>
+          </div>
         </div>
       </footer>
     </div>
@@ -101,26 +105,41 @@ function PublicLayout() {
 
 function StaffLayout() {
   const { token, staff, loading, logout, error } = useStaff();
+  const { pathname } = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
+  useEffect(() => { setMenuOpen(false); }, [pathname]);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const close = (event: KeyboardEvent) => { if (event.key === 'Escape') setMenuOpen(false); };
+    window.addEventListener('keydown', close);
+    return () => window.removeEventListener('keydown', close);
+  }, [menuOpen]);
   if (!token) return <><DemoBanner /><LoginPage /></>;
   if (loading || !staff) {
     return error ? <p className="p-8 text-center text-danger">{error}</p> : <Loading label="กำลังโหลดข้อมูลผู้สมัคร" />;
   }
+  const admin = staff.role === 'admin';
   const link = ({ isActive }: { isActive: boolean }) =>
     cn('inline-flex min-h-11 items-center gap-2 rounded-control px-3 text-[15px] font-medium transition-colors', isActive ? 'bg-ink-inverse/15 text-ink-inverse' : 'text-ink-inverse/75 hover:text-ink-inverse');
+  const tab = ({ isActive }: { isActive: boolean }) =>
+    cn('flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 text-xs font-medium transition-colors', isActive ? 'text-brand' : 'text-ink-muted');
+  const sheetLink = 'flex min-h-12 items-center gap-3 rounded-control px-3 text-base text-ink hover:bg-sunken';
+  // หน้าที่อยู่ในแผ่น "เมนู" — แท็บเมนูติดสีเมื่อเปิดหน้าเหล่านี้อยู่
+  const inMenu = ['/staff/programs', '/staff/announcements', '/staff/settings', '/staff/account'].some((path) => pathname.startsWith(path));
   return (
     <div className="flex min-h-dvh flex-col">
       <DemoBanner />
       <header className="no-print bg-brand-deep text-ink-inverse">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2">
-          <Link to="/staff" className="flex items-center gap-3">
+          <Link to="/staff" className="flex min-h-11 items-center gap-3">
             <img src={`${import.meta.env.BASE_URL}college-logo.png`} alt="" className="size-10 rounded-full bg-surface p-0.5" />
             <span className="font-semibold">งานรับสมัคร</span>
           </Link>
-          <nav aria-label="เมนูเจ้าหน้าที่" className="flex flex-1 flex-wrap gap-1">
+          <nav aria-label="เมนูเจ้าหน้าที่" className="hidden flex-1 flex-wrap gap-1 md:flex">
             <NavLink end to="/staff" className={link}><BarChart3 className="size-4" aria-hidden="true" />ภาพรวม</NavLink>
             <NavLink to="/staff/applicants" className={link}><Users className="size-4" aria-hidden="true" />ผู้สมัคร</NavLink>
             <NavLink to="/staff/qr" className={link}><QrCode className="size-4" aria-hidden="true" />QR Code</NavLink>
-            {staff.role === 'admin' && (
+            {admin && (
               <>
                 <NavLink to="/staff/programs" className={link}><Layers className="size-4" aria-hidden="true" />ประเภทวิชา/สาขา</NavLink>
                 <NavLink to="/staff/announcements" className={link}><Megaphone className="size-4" aria-hidden="true" />ประกาศ</NavLink>
@@ -128,23 +147,53 @@ function StaffLayout() {
               </>
             )}
           </nav>
-          <div className="flex items-center gap-2 text-sm">
-            <Link to="/" className="inline-flex min-h-11 items-center gap-1.5 rounded-control px-3 text-ink-inverse/80 hover:bg-ink-inverse/10 hover:text-ink-inverse">
-              <ExternalLink className="size-4" aria-hidden="true" />หน้าเว็บผู้สมัคร
+          <div className="ml-auto flex items-center gap-1 text-sm md:ml-0">
+            <Link to="/" title="หน้าเว็บผู้สมัคร" aria-label="หน้าเว็บผู้สมัคร" className="hidden min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-control px-3 text-ink-inverse/80 hover:bg-ink-inverse/10 hover:text-ink-inverse md:inline-flex">
+              <ExternalLink className="size-4" aria-hidden="true" /><span className="hidden 2xl:inline">หน้าเว็บผู้สมัคร</span>
             </Link>
-            <Link to="/staff/account" title="บัญชีของฉัน / เปลี่ยนรหัสผ่าน" className="inline-flex min-h-11 items-center gap-1.5 rounded-control px-3 text-ink-inverse/80 hover:bg-ink-inverse/10 hover:text-ink-inverse">
-              <KeyRound className="size-4" aria-hidden="true" />{staff.displayName}
+            <Link to="/staff/account" title="บัญชีของฉัน / เปลี่ยนรหัสผ่าน" className="inline-flex min-h-11 max-w-44 items-center gap-1.5 rounded-control px-3 text-ink-inverse/80 hover:bg-ink-inverse/10 hover:text-ink-inverse">
+              <KeyRound className="size-4 shrink-0" aria-hidden="true" /><span className="truncate">{staff.displayName}</span>
             </Link>
-            <button type="button" onClick={logout} className="inline-flex min-h-11 items-center gap-1.5 rounded-control px-3 text-ink-inverse/80 hover:bg-ink-inverse/10 hover:text-ink-inverse">
+            <button type="button" onClick={logout} className="hidden min-h-11 items-center gap-1.5 rounded-control px-3 text-ink-inverse/80 hover:bg-ink-inverse/10 hover:text-ink-inverse md:inline-flex">
               <LogOut className="size-4" aria-hidden="true" />ออกจากระบบ
             </button>
           </div>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6">
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 pb-36 pt-5 md:py-6">
         {error && <p className="no-print mb-4 rounded-control bg-danger-soft px-4 py-2 text-danger">{error}</p>}
         <Outlet />
       </main>
+
+      {/* มือถือ: แถบแท็บล่าง นิ้วโป้งเอื้อมถึง หน้ารองอยู่ในแผ่นเมนู */}
+      {menuOpen && <button type="button" aria-label="ปิดเมนู" onClick={() => setMenuOpen(false)} className="no-print fixed inset-0 z-30 bg-ink/40 md:hidden" />}
+      {menuOpen && (
+        <div id="staff-menu" className="no-print sheet-up fixed inset-x-0 bottom-0 z-40 rounded-t-[20px] bg-surface px-3 pb-[calc(env(safe-area-inset-bottom)+4.5rem)] pt-3 shadow-paper md:hidden">
+          <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-line-strong" aria-hidden="true" />
+          <nav aria-label="เมนูเพิ่มเติม" className="grid gap-0.5">
+            {admin && (
+              <>
+                <Link to="/staff/programs" className={sheetLink}><Layers className="size-5 text-brand" aria-hidden="true" />ประเภทวิชา/สาขา และจำนวนรับ</Link>
+                <Link to="/staff/announcements" className={sheetLink}><Megaphone className="size-5 text-brand" aria-hidden="true" />ประกาศ</Link>
+                <Link to="/staff/settings" className={sheetLink}><SettingsIcon className="size-5 text-brand" aria-hidden="true" />ตั้งค่าการรับสมัคร</Link>
+              </>
+            )}
+            <Link to="/staff/account" className={sheetLink}><KeyRound className="size-5 text-brand" aria-hidden="true" />บัญชีของฉัน / เปลี่ยนรหัสผ่าน</Link>
+            <Link to="/" className={sheetLink}><ExternalLink className="size-5 text-brand" aria-hidden="true" />หน้าเว็บผู้สมัคร</Link>
+            <InstallApp variant="sheet" />
+            <button type="button" onClick={logout} className={cn(sheetLink, 'text-danger')}><LogOut className="size-5" aria-hidden="true" />ออกจากระบบ</button>
+          </nav>
+        </div>
+      )}
+      <nav aria-label="เมนูหลัก" className="no-print fixed inset-x-0 bottom-0 z-50 flex border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
+        <NavLink end to="/staff" className={tab}><BarChart3 className="size-5" aria-hidden="true" />ภาพรวม</NavLink>
+        <NavLink to="/staff/applicants" className={tab}><Users className="size-5" aria-hidden="true" />ผู้สมัคร</NavLink>
+        <NavLink to="/staff/qr" className={tab}><QrCode className="size-5" aria-hidden="true" />QR Code</NavLink>
+        <button type="button" onClick={() => setMenuOpen((v) => !v)} aria-expanded={menuOpen} aria-controls="staff-menu"
+          className={tab({ isActive: menuOpen || inMenu })}>
+          {menuOpen ? <X className="size-5" aria-hidden="true" /> : <Menu className="size-5" aria-hidden="true" />}เมนู
+        </button>
+      </nav>
     </div>
   );
 }

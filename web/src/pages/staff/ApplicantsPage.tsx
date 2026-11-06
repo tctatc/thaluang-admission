@@ -13,7 +13,7 @@ import { useStaff } from '../../app/staff';
 import { Button, StatusBadge, cn } from '../../components/ui';
 import { downloadBlob } from '../../lib/files';
 
-const control = 'min-h-11 rounded-control border border-line-strong bg-surface px-3 text-[15px]';
+const control = 'min-h-11 w-full min-w-0 rounded-control border border-line-strong bg-surface px-3 text-base sm:text-[15px]';
 
 type SortKey = 'appNo' | 'name' | 'program' | 'school' | 'status' | 'createdAt';
 
@@ -113,8 +113,8 @@ export function ApplicantsPage() {
         </div>
       </div>
 
-      <div className="grid gap-2 rounded-card bg-surface p-3 shadow-card ring-1 ring-line sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-[1.6fr_repeat(5,1fr)]">
-        <label className="relative">
+      <div className="grid grid-cols-2 gap-2 rounded-card bg-surface p-3 shadow-card ring-1 ring-line sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-[1.6fr_repeat(5,1fr)]">
+        <label className="relative col-span-2 min-w-0 sm:col-span-2 lg:col-span-3 xl:col-span-1">
           <span className="sr-only">ค้นหา</span>
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-ink-muted" aria-hidden="true" />
           <input type="search" value={q} onChange={(e) => setParam('q', e.target.value)} placeholder="ชื่อ นามสกุล โรงเรียน สาขา เลขบัตร" className={cn(control, 'w-full pl-9')} />
@@ -143,7 +143,31 @@ export function ApplicantsPage() {
         </select>
       </div>
 
-      <div className="overflow-x-auto rounded-card bg-surface shadow-card ring-1 ring-line">
+      {/* มือถือ: การ์ดทีละคน แตะทั้งการ์ดเพื่อเปิด */}
+      <ul className="space-y-2 md:hidden">
+        {filtered.map((a) => (
+          <li key={a.id}>
+            <Link to={`/staff/applicants/${a.id}`} className="block rounded-card bg-surface p-4 shadow-card ring-1 ring-line active:bg-brand-soft/60">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-brand" data-numeric>{a.appNo}</p>
+                  <p className="truncate text-base font-semibold">{fullName(a)}</p>
+                </div>
+                <StatusBadge status={a.status as Status} />
+              </div>
+              <p className="mt-1 text-[15px]">{a.level === 'pvc' ? 'ปวช.' : 'ปวส.'} {choiceOf(a, programs)?.name}</p>
+              <p className="truncate text-sm text-ink-muted">{a.schoolName}</p>
+              <div className="mt-2 flex items-center justify-between gap-2 border-t border-line pt-2">
+                <DocSummary applicant={a} />
+                <span className="text-sm text-ink-muted" data-numeric>{shortDate(a.createdAt)}</span>
+              </div>
+            </Link>
+          </li>
+        ))}
+        {filtered.length === 0 && <li className="rounded-card bg-surface px-4 py-12 text-center text-ink-muted ring-1 ring-line">{applicants.length ? 'ไม่มีผู้สมัครที่ตรงกับตัวกรอง' : 'ยังไม่มีผู้สมัคร'}</li>}
+      </ul>
+
+      <div className="hidden overflow-x-auto rounded-card bg-surface shadow-card ring-1 ring-line md:block">
         <table className="w-full min-w-[880px] text-left text-[15px]">
           <thead className="border-b border-line bg-sunken text-sm text-ink-muted">
             <tr>
