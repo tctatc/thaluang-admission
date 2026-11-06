@@ -12,6 +12,7 @@
  */
 
 import type { Announcement, Applicant, DocKind, DocState, Program, Settings, Status } from '@shared/model';
+import type { StaffAccount, StaffAccountInput } from '@shared/users';
 import type { PublicApplicant } from '@shared/service';
 import type { PublicStats } from '@shared/stats';
 import type { Issue } from '@shared/validate';
@@ -93,6 +94,11 @@ export const api = {
   login: (username: string, password: string) => transport.call<{ token: string; staff: StaffUser }>('login', { username, password }),
   changePassword: (token: string, currentPassword: string, newPassword: string) =>
     transport.call<{ token: string }>('changePassword', { currentPassword, newPassword }, token),
+  listStaff: (token: string) => transport.call<{ users: StaffAccount[] }>('listStaff', {}, token),
+  createStaff: (token: string, account: StaffAccountInput & { password: string }) => transport.call<{ users: StaffAccount[] }>('createStaff', account, token),
+  updateStaff: (token: string, account: StaffAccountInput) => transport.call<{ users: StaffAccount[] }>('updateStaff', account, token),
+  resetStaffPassword: (token: string, username: string, password: string) => transport.call<{ users: StaffAccount[] }>('resetStaffPassword', { username, password }, token),
+  deleteStaff: (token: string, username: string) => transport.call<{ users: StaffAccount[] }>('deleteStaff', { username }, token),
   staffBootstrap: (token: string) => transport.call<{ staff: StaffUser; settings: Settings; programs: Program[]; applicants: Applicant[]; dataVersion: number }>('staffBootstrap', {}, token),
   me: (token: string) => transport.call<{ staff: StaffUser; settings: Settings; programs: Program[]; dataVersion: number }>('me', {}, token),
   applicants: (token: string) => transport.call<{ applicants: Applicant[]; dataVersion: number }>('applicants', {}, token),

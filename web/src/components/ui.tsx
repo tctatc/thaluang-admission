@@ -193,3 +193,9 @@ export function Panel({ children, className, title, action }: { children: ReactN
 export function Loading({ label = 'กำลังโหลด' }: { label?: string }) {
   return <p className="flex items-center justify-center gap-2 py-16 text-ink-muted" role="status"><Loader2 className="size-5 animate-spin" aria-hidden="true" />{label}</p>;
 }
+
+/** ตัวอักษรแรกสำหรับวงกลมรูปโปรไฟล์ — ข้ามคำนำหน้า (นาย/นางสาว) และสระหน้า (เ แ โ ใ ไ) ไม่งั้นทุกคนได้ "น" หรือ "เ" */
+export function initialOf(name: string): string {
+  const bare = name.trim().replace(/^(นางสาว|นาย|นาง|ด\.?ช\.?|ด\.?ญ\.?|ดร\.?|ครู|อ\.)\s*/, '');
+  return [...bare].find((ch) => !/[เแโใไ\s]/.test(ch)) ?? '?';
+}

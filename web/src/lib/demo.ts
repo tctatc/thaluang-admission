@@ -17,6 +17,8 @@ import {
 import { deleteAnnouncement, normalizePrograms, normalizeSettings, publicAnnouncements, saveAnnouncement } from '@shared/admin';
 import type { Announcement, Program } from '@shared/model';
 import { checkUpload } from '@shared/files';
+import { checkNewPassword } from '@shared/validate';
+import { normalizeStaffInput, staffChangeProblem, validateStaffInput, type StaffAccount } from '@shared/users';
 import { computePublicStats } from '@shared/stats';
 import type { Transport } from './api';
 import { ApiError } from './errors';
@@ -27,6 +29,7 @@ const KEY_SETTINGS = 'tla.demo.settings.v1';
 const KEY_VERSION = 'tla.demo.version.v1';
 const KEY_PROGRAMS = 'tla.demo.programs.v3';
 const KEY_ANNOUNCEMENTS = 'tla.demo.announcements.v1';
+const KEY_STAFF = 'tla.demo.staff.v1';
 
 /** บัญชีเจ้าหน้าที่ของโหมดสาธิต (หน้าเข้าสู่ระบบแสดงไว้ให้) */
 export const DEMO_STAFF = [
@@ -67,10 +70,22 @@ function requireAdmin(token: string) {
   if (staffFromToken(token).role !== 'admin') fail('FORBIDDEN', 'เฉพาะผู้ดูแลระบบ');
 }
 
+/** บัญชีโหมดสาธิตเก็บในเบราว์เซอร์ (รหัสผ่านเป็นข้อความธรรมดา ใช้ทดลองเท่านั้น ระบบจริงเก็บแค่ HMAC) */
+type DemoStaff = StaffAccount & { password: string; version: number };
+const demoStaff = (): DemoStaff[] => load<DemoStaff[]>(KEY_STAFF, DEMO_STAFF.map((s) => ({ ...s, status: 'active', lastLoginAt: '', version: 1 })));
+const saveStaff = (list: DemoStaff[]) => save(KEY_STAFF, list);
+const account = ({ password: _p, version: _v, ...rest }: DemoStaff): StaffAccount => rest;
+const accounts = () => ({ users: demoStaff().map(account) });
+
 function staffFromToken(token: string) {
-  const staff = DEMO_STAFF.find((item) => `demo:${item.username}` === token);
-  if (!staff) throw new ApiError('UNAUTHENTICATED', 'กรุณาเข้าสู่ระบบใหม่');
+  const [, username, version] = token.split(':');
+  const staff = demoStaff().find((item) => item.username === username);
+  if (!staff || staff.status !== 'active' || String(staff.version) !== version) throw new ApiError('UNAUTHENTICATED', 'กรุณาเข้าสู่ระบบใหม่');
   return staff;
+}
+
+function updateDemoStaff(username: string, patch: Partial<DemoStaff>) {
+  saveStaff(demoStaff().map((item) => (item.username === username ? { ...item, ...patch } : item)));
 }
 
 async function photoOf(applicant: Applicant): Promise<string> {
@@ -130,13 +145,59 @@ const handlers: Record<string, Handler> = {
   },
 
   login: (payload) => {
-    const staff = DEMO_STAFF.find((item) => item.username === String(payload.username).trim().toLowerCase() && item.password === payload.password);
+    const staff = demoStaff().find((item) => item.username === String(payload.username).trim().toLowerCase() && item.password === payload.password);
     if (!staff) fail('BAD_REQUEST', 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
-    return { token: `demo:${staff.username}`, staff: { username: staff.username, displayName: staff.displayName, role: staff.role } };
+    if (staff.status !== 'active') fail('FORBIDDEN', 'บัญชีนี้ถูกปิดการใช้งาน');
+    updateDemoStaff(staff.username, { lastLoginAt: new Date().toISOString() });
+    return { token: `demo:${staff.username}:${staff.version}`, staff: { username: staff.username, displayName: staff.displayName, role: staff.role } };
   },
-  changePassword: (_payload, token) => {
-    staffFromToken(token);
-    return fail('FORBIDDEN', 'โหมดสาธิตใช้รหัสตายตัว เปลี่ยนไม่ได้ ระบบจริงเปลี่ยนได้ตามปกติ');
+  changePassword: (payload, token) => {
+    const staff = staffFromToken(token);
+    if (String(payload.currentPassword) !== staff.password) fail('VALIDATION', 'รหัสผ่านเดิมไม่ถูกต้อง', [{ field: 'currentPassword', message: 'รหัสผ่านเดิมไม่ถูกต้อง' }]);
+    const problem = checkNewPassword(staff.password, String(payload.newPassword ?? ''));
+    if (problem) fail('VALIDATION', problem, [{ field: 'newPassword', message: problem }]);
+    updateDemoStaff(staff.username, { password: String(payload.newPassword), version: staff.version + 1 });
+    return { token: `demo:${staff.username}:${staff.version + 1}` };
+  },
+  listStaff: (_payload, token) => { requireAdmin(token); return accounts(); },
+  createStaff: (payload, token) => {
+    requireAdmin(token);
+    const input = normalizeStaffInput(payload);
+    const password = String(payload.password ?? '');
+    const issues = validateStaffInput(input, demoStaff(), true, password);
+    if (issues.length) fail('VALIDATION', issues[0]!.message, issues);
+    saveStaff([...demoStaff(), { ...input, status: 'active', lastLoginAt: '', password, version: 1 }]);
+    return accounts();
+  },
+  updateStaff: (payload, token) => {
+    requireAdmin(token);
+    const actor = staffFromToken(token);
+    const input = normalizeStaffInput(payload);
+    const issues = validateStaffInput(input, [], false);
+    if (issues.length) fail('VALIDATION', issues[0]!.message, issues);
+    const problem = staffChangeProblem(demoStaff(), actor.username, input.username, { role: input.role, status: input.status });
+    if (problem) fail('CONFLICT', problem);
+    const current = demoStaff().find((item) => item.username === input.username)!;
+    const kick = current.role !== input.role || current.status !== input.status;
+    updateDemoStaff(input.username, { displayName: input.displayName, role: input.role, status: input.status, version: current.version + (kick ? 1 : 0) });
+    return accounts();
+  },
+  resetStaffPassword: (payload, token) => {
+    requireAdmin(token);
+    const password = String(payload.password ?? '');
+    const problem = checkNewPassword('', password);
+    if (problem) fail('VALIDATION', problem, [{ field: 'password', message: problem }]);
+    const current = demoStaff().find((item) => item.username === payload.username);
+    if (!current) fail('NOT_FOUND', 'ไม่พบบัญชีนี้');
+    updateDemoStaff(current.username, { password, version: current.version + 1 });
+    return accounts();
+  },
+  deleteStaff: (payload, token) => {
+    requireAdmin(token);
+    const problem = staffChangeProblem(demoStaff(), staffFromToken(token).username, String(payload.username), null);
+    if (problem) fail('CONFLICT', problem);
+    saveStaff(demoStaff().filter((item) => item.username !== payload.username));
+    return accounts();
   },
   me: (_payload, token) => {
     const staff = staffFromToken(token);

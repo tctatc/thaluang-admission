@@ -81,7 +81,9 @@ export function ScaledSheet({ children, className }: { children: ReactNode; clas
   }, []);
 
   return (
-    <div ref={outerRef} className={`w-full overflow-hidden print:overflow-visible ${className ?? ''}`} style={{ height }}>
+    // contain:inline-size = ความกว้างของกรอบไม่ขึ้นกับแผ่น A4 ข้างใน (กว้าง 794px) ไม่ว่าจะวางใน grid/flex แบบไหน
+    // ไม่งั้นกรอบถูกแผ่นดันให้กว้างเท่า A4 แล้วคำนวณได้ว่าไม่ต้องย่อ จอมือถือเห็นแค่ครึ่งแผ่น
+    <div ref={outerRef} className={`w-full min-w-0 overflow-hidden [contain:inline-size] print:overflow-visible print:[contain:none] ${className ?? ''}`} style={{ height }}>
       <div ref={innerRef} className="print-scale w-[210mm] origin-top-left" style={{ transform: scale < 1 ? `scale(${scale})` : undefined }}>
         {children}
       </div>

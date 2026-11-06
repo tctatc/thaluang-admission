@@ -52,6 +52,9 @@ var Domain = (() => {
     SHEET_SETTINGS: () => SHEET_SETTINGS,
     SHEET_STAFF: () => SHEET_STAFF,
     STAFF_COLUMNS: () => STAFF_COLUMNS,
+    STAFF_ROLES: () => STAFF_ROLES,
+    STAFF_ROLE_HINT: () => STAFF_ROLE_HINT,
+    STAFF_ROLE_LABEL: () => STAFF_ROLE_LABEL,
     STATUSES: () => STATUSES,
     STATUS_LABEL: () => STATUS_LABEL,
     THAI_MONTHS: () => THAI_MONTHS,
@@ -92,6 +95,7 @@ var Domain = (() => {
     normalizeInput: () => normalizeInput,
     normalizePrograms: () => normalizePrograms,
     normalizeSettings: () => normalizeSettings,
+    normalizeStaffInput: () => normalizeStaffInput,
     parseAnnouncements: () => parseAnnouncements,
     parseIsoDate: () => parseIsoDate,
     parsePrograms: () => parsePrograms,
@@ -106,6 +110,7 @@ var Domain = (() => {
     schoolsByProgram: () => schoolsByProgram,
     setStatus: () => setStatus,
     sniffMime: () => sniffMime,
+    staffChangeProblem: () => staffChangeProblem,
     submitApplication: () => submitApplication,
     thaiLongDate: () => thaiLongDate,
     toArabicDigits: () => toArabicDigits,
@@ -114,7 +119,8 @@ var Domain = (() => {
     trackOf: () => trackOf,
     updateApplicant: () => updateApplicant,
     validateApplication: () => validateApplication,
-    validateEnrollment: () => validateEnrollment
+    validateEnrollment: () => validateEnrollment,
+    validateStaffInput: () => validateStaffInput
   });
 
   // shared/model.ts
@@ -1191,6 +1197,47 @@ var Domain = (() => {
     }
     if (issues.length) fail("VALIDATION", issues[0].message, issues);
     return settings;
+  }
+
+  // shared/users.ts
+  var STAFF_ROLES = ["staff", "admin"];
+  var STAFF_ROLE_LABEL = { staff: "\u0E40\u0E08\u0E49\u0E32\u0E2B\u0E19\u0E49\u0E32\u0E17\u0E35\u0E48", admin: "\u0E1C\u0E39\u0E49\u0E14\u0E39\u0E41\u0E25\u0E23\u0E30\u0E1A\u0E1A" };
+  var STAFF_ROLE_HINT = {
+    staff: "\u0E14\u0E39\u0E41\u0E25\u0E30\u0E15\u0E23\u0E27\u0E08\u0E43\u0E1A\u0E2A\u0E21\u0E31\u0E04\u0E23 \u0E40\u0E1B\u0E25\u0E35\u0E48\u0E22\u0E19\u0E2A\u0E16\u0E32\u0E19\u0E30 \u0E23\u0E31\u0E1A\u0E21\u0E2D\u0E1A\u0E15\u0E31\u0E27 \u0E2A\u0E48\u0E07\u0E2D\u0E2D\u0E01 Excel",
+    admin: "\u0E17\u0E33\u0E44\u0E14\u0E49\u0E17\u0E38\u0E01\u0E2D\u0E22\u0E48\u0E32\u0E07 \u0E23\u0E27\u0E21\u0E16\u0E36\u0E07\u0E2A\u0E32\u0E02\u0E32 \u0E1B\u0E23\u0E30\u0E01\u0E32\u0E28 \u0E15\u0E31\u0E49\u0E07\u0E04\u0E48\u0E32 \u0E41\u0E25\u0E30\u0E08\u0E31\u0E14\u0E01\u0E32\u0E23\u0E1C\u0E39\u0E49\u0E43\u0E0A\u0E49"
+  };
+  var USERNAME = /^[a-z0-9._-]{3,32}$/;
+  function normalizeStaffInput(raw) {
+    var _a, _b;
+    const source = raw && typeof raw === "object" ? raw : {};
+    return {
+      username: String((_a = source.username) != null ? _a : "").trim().toLowerCase(),
+      displayName: String((_b = source.displayName) != null ? _b : "").replace(/\s+/g, " ").trim().slice(0, 100),
+      role: source.role === "admin" ? "admin" : "staff",
+      status: source.status === "disabled" ? "disabled" : "active"
+    };
+  }
+  function validateStaffInput(input, existing, creating, password = "") {
+    const issues = [];
+    if (creating) {
+      if (!USERNAME.test(input.username)) issues.push({ field: "username", message: "\u0E0A\u0E37\u0E48\u0E2D\u0E1C\u0E39\u0E49\u0E43\u0E0A\u0E49 3\u201332 \u0E15\u0E31\u0E27 \u0E43\u0E0A\u0E49 a-z 0-9 . _ - \u0E40\u0E17\u0E48\u0E32\u0E19\u0E31\u0E49\u0E19" });
+      else if (existing.some((u) => u.username === input.username)) issues.push({ field: "username", message: `\u0E21\u0E35\u0E0A\u0E37\u0E48\u0E2D\u0E1C\u0E39\u0E49\u0E43\u0E0A\u0E49 ${input.username} \u0E41\u0E25\u0E49\u0E27` });
+      const problem = checkNewPassword("", password);
+      if (problem) issues.push({ field: "password", message: problem });
+    }
+    if (!input.displayName) issues.push({ field: "displayName", message: "\u0E01\u0E23\u0E2D\u0E01\u0E0A\u0E37\u0E48\u0E2D-\u0E19\u0E32\u0E21\u0E2A\u0E01\u0E38\u0E25" });
+    return issues;
+  }
+  function staffChangeProblem(list, actor, target, next) {
+    const current = list.find((u) => u.username === target);
+    if (!current) return "\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E1A\u0E31\u0E0D\u0E0A\u0E35\u0E19\u0E35\u0E49";
+    if (target === actor) {
+      if (next === null) return "\u0E25\u0E1A\u0E1A\u0E31\u0E0D\u0E0A\u0E35\u0E02\u0E2D\u0E07\u0E15\u0E31\u0E27\u0E40\u0E2D\u0E07\u0E44\u0E21\u0E48\u0E44\u0E14\u0E49 \u0E43\u0E2B\u0E49\u0E1C\u0E39\u0E49\u0E14\u0E39\u0E41\u0E25\u0E04\u0E19\u0E2D\u0E37\u0E48\u0E19\u0E17\u0E33\u0E41\u0E17\u0E19";
+      if (next.role !== current.role || next.status !== current.status) return "\u0E40\u0E1B\u0E25\u0E35\u0E48\u0E22\u0E19\u0E2A\u0E34\u0E17\u0E18\u0E34\u0E4C\u0E2B\u0E23\u0E37\u0E2D\u0E1B\u0E34\u0E14\u0E1A\u0E31\u0E0D\u0E0A\u0E35\u0E02\u0E2D\u0E07\u0E15\u0E31\u0E27\u0E40\u0E2D\u0E07\u0E44\u0E21\u0E48\u0E44\u0E14\u0E49 \u0E43\u0E2B\u0E49\u0E1C\u0E39\u0E49\u0E14\u0E39\u0E41\u0E25\u0E04\u0E19\u0E2D\u0E37\u0E48\u0E19\u0E17\u0E33\u0E41\u0E17\u0E19";
+    }
+    const after = list.filter((u) => !(next === null && u.username === target)).map((u) => u.username === target && next ? { ...u, ...next } : u);
+    if (!after.some((u) => u.role === "admin" && u.status === "active")) return "\u0E15\u0E49\u0E2D\u0E07\u0E21\u0E35\u0E1C\u0E39\u0E49\u0E14\u0E39\u0E41\u0E25\u0E23\u0E30\u0E1A\u0E1A\u0E17\u0E35\u0E48\u0E43\u0E0A\u0E49\u0E07\u0E32\u0E19\u0E44\u0E14\u0E49\u0E2D\u0E22\u0E48\u0E32\u0E07\u0E19\u0E49\u0E2D\u0E22 1 \u0E04\u0E19";
+    return "";
   }
   return __toCommonJS(index_exports);
 })();

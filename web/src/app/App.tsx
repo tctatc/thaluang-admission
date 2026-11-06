@@ -1,9 +1,9 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { Link, NavLink, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
-import { BarChart3, ClipboardCheck, ExternalLink, FileSearch, FlaskConical, Home, KeyRound, Layers, LogOut, Megaphone, PencilLine, QrCode, Settings as SettingsIcon, Users } from 'lucide-react';
+import { BarChart3, ClipboardCheck, ExternalLink, FileSearch, FlaskConical, Home, KeyRound, Layers, LogOut, Megaphone, PencilLine, QrCode, Settings as SettingsIcon, UserCog, Users } from 'lucide-react';
 import { apiMode, type PublicConfig } from '../lib/api';
 import { useHome } from '../lib/publicData';
-import { cn, Loading } from '../components/ui';
+import { cn, initialOf, Loading } from '../components/ui';
 import { InstallApp } from '../components/InstallApp';
 import { BottomNav, sheetRowClass, type MobileNavItem } from '../components/MobileNav';
 import { HomePage } from '../pages/HomePage';
@@ -18,6 +18,7 @@ const SettingsPage = lazy(() => import('../pages/staff/SettingsPage').then((m) =
 const ProgramsPage = lazy(() => import('../pages/staff/ProgramsPage').then((m) => ({ default: m.ProgramsPage })));
 const AnnouncementsPage = lazy(() => import('../pages/staff/AnnouncementsPage').then((m) => ({ default: m.AnnouncementsPage })));
 const AccountPage = lazy(() => import('../pages/staff/AccountPage').then((m) => ({ default: m.AccountPage })));
+const UsersPage = lazy(() => import('../pages/staff/UsersPage').then((m) => ({ default: m.UsersPage })));
 const QrPage = lazy(() => import('../pages/staff/QrPage').then((m) => ({ default: m.QrPage })));
 import { StaffProvider, useStaff } from './staff';
 
@@ -37,6 +38,7 @@ export function App() {
         <Route path="programs" element={<Suspense fallback={<Loading />}><ProgramsPage /></Suspense>} />
         <Route path="announcements" element={<Suspense fallback={<Loading />}><AnnouncementsPage /></Suspense>} />
         <Route path="qr" element={<Suspense fallback={<Loading />}><QrPage /></Suspense>} />
+        <Route path="users" element={<Suspense fallback={<Loading />}><UsersPage /></Suspense>} />
         <Route path="account" element={<Suspense fallback={<Loading />}><AccountPage /></Suspense>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
@@ -124,12 +126,13 @@ function StaffLayout() {
     ...(admin ? [
       { to: '/staff/programs', label: 'ประเภทวิชา/สาขา และจำนวนรับ', icon: Layers },
       { to: '/staff/announcements', label: 'ประกาศ', icon: Megaphone },
+      { to: '/staff/users', label: 'จัดการผู้ใช้', icon: UserCog },
       { to: '/staff/settings', label: 'ตั้งค่าการรับสมัคร', icon: SettingsIcon },
     ] : []),
     { to: '/staff/account', label: 'บัญชีของฉัน / เปลี่ยนรหัสผ่าน', icon: KeyRound },
     { to: '/', label: 'หน้าเว็บผู้สมัคร', icon: ExternalLink, end: true },
   ];
-  const initial = staff.displayName.trim().charAt(0) || '?';
+  const initial = initialOf(staff.displayName);
   return (
     <div className="flex min-h-dvh flex-col">
       <DemoBanner />
@@ -162,6 +165,7 @@ function StaffLayout() {
               <>
                 <NavLink to="/staff/programs" className={link}><Layers className="size-4" aria-hidden="true" />ประเภทวิชา/สาขา</NavLink>
                 <NavLink to="/staff/announcements" className={link}><Megaphone className="size-4" aria-hidden="true" />ประกาศ</NavLink>
+                <NavLink to="/staff/users" className={link}><UserCog className="size-4" aria-hidden="true" />ผู้ใช้</NavLink>
                 <NavLink to="/staff/settings" className={link}><SettingsIcon className="size-4" aria-hidden="true" />ตั้งค่า</NavLink>
               </>
             )}

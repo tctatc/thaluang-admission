@@ -166,6 +166,25 @@ function apiHandlers_() {
       return changePassword_(token, payload);
     },
 
+    /* ---------- ผู้ดูแล: บัญชีเจ้าหน้าที่ ---------- */
+
+    listStaff: function (payload, token) {
+      requireAdmin_(token);
+      return { users: listStaffAccounts_() };
+    },
+    createStaff: function (payload, token) {
+      return createStaffAccount_(requireAdmin_(token), payload);
+    },
+    updateStaff: function (payload, token) {
+      return updateStaffAccount_(requireAdmin_(token), payload);
+    },
+    resetStaffPassword: function (payload, token) {
+      return adminResetPassword_(requireAdmin_(token), payload);
+    },
+    deleteStaff: function (payload, token) {
+      return deleteStaffAccount_(requireAdmin_(token), payload);
+    },
+
     /** หน้าเจ้าหน้าที่เปิดครั้งแรก: ตรวจสิทธิ์ครั้งเดียว แล้วส่งทุกอย่างกลับในคำขอเดียว */
     staffBootstrap: function (payload, token) {
       const staff = authenticate_(token);

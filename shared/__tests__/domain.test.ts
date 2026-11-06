@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SAMPLE_PROGRAMS, DEFAULT_SETTINGS, type Applicant } from '../model';
+import { staffChangeProblem, validateStaffInput, normalizeStaffInput, type StaffAccount } from '../users';
 import { checkNewPassword, isValidThaiId, normalizeInput, validateApplication } from '../validate';
 import { checkStudentIdPattern, nextApplicationNo, nextStudentId } from '../numbering';
 import { checkUpload } from '../files';
@@ -280,5 +281,29 @@ describe('สาขาตามประกาศรับสมัครโค�
     expect(of('pvs')).toHaveLength(17);
     expect(of('pvc').reduce((n, p) => n + p.quota, 0)).toBe(215);
     expect(of('pvs').reduce((n, p) => n + p.quota, 0)).toBe(385);
+  });
+});
+
+describe('บัญชีเจ้าหน้าที่', () => {
+  const list: StaffAccount[] = [
+    { username: 'admin', displayName: 'ผู้ดูแล', role: 'admin', status: 'active', lastLoginAt: '' },
+    { username: 'staff1', displayName: 'ทะเบียน', role: 'staff', status: 'active', lastLoginAt: '' },
+  ];
+  it('ชื่อผู้ใช้ต้องถูกรูปแบบและไม่ซ้ำ รหัสแรกเข้าต้องผ่านกฎ', () => {
+    const fields = (raw: object, pw: string) => validateStaffInput(normalizeStaffInput(raw), list, true, pw).map((i) => i.field);
+    expect(fields({ username: 'Staff1', displayName: 'x' }, 'thaluang2569')).toEqual(['username']);
+    expect(fields({ username: 'ab', displayName: 'x' }, 'thaluang2569')).toEqual(['username']);
+    expect(fields({ username: 'staff2', displayName: '' }, '123')).toEqual(['password', 'displayName']);
+    expect(fields({ username: 'staff2', displayName: 'ครูเอ' }, 'thaluang2569')).toEqual([]);
+  });
+  it('ห้ามลบ/ลดสิทธิ์ตัวเอง และต้องเหลือผู้ดูแลที่ใช้งานได้อย่างน้อย 1 คน', () => {
+    expect(staffChangeProblem(list, 'admin', 'admin', null)).toMatch(/ตัวเอง/);
+    expect(staffChangeProblem(list, 'admin', 'admin', { role: 'staff', status: 'active' })).toMatch(/ตัวเอง/);
+    expect(staffChangeProblem(list, 'admin', 'staff1', null)).toBe('');
+    expect(staffChangeProblem(list, 'admin', 'staff1', { role: 'admin', status: 'active' })).toBe('');
+    const two: StaffAccount[] = [...list, { username: 'boss', displayName: 'ผอ.', role: 'admin', status: 'active', lastLoginAt: '' }];
+    expect(staffChangeProblem(two, 'boss', 'admin', { role: 'staff', status: 'active' })).toBe('');
+    expect(staffChangeProblem(list.map((u) => ({ ...u, role: 'admin' as const })), 'staff1', 'admin', { role: 'admin', status: 'disabled' })).toBe('');
+    expect(staffChangeProblem([list[0]!, { ...list[1]!, role: 'admin', status: 'disabled' }], 'staff1', 'admin', null)).toMatch(/อย่างน้อย 1 คน/);
   });
 });
