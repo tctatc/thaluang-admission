@@ -32,7 +32,7 @@ export function EnrollmentSheet({ applicant, programs, photo }: { applicant: App
       </div>
       <img src={`${import.meta.env.BASE_URL}college-logo.png`} alt="ตราวิทยาลัยเทคนิคท่าหลวงซิเมนต์ไทยอนุสรณ์" className="mx-auto" style={{ width: '22mm', height: '22mm' }} />
       <h1 className="mt-[2mm] px-[26mm] text-center text-[15pt] font-bold">ใบมอบตัวนักเรียน นักศึกษา</h1>
-      <p className="mb-[2mm] px-[26mm] text-center text-[13.5pt] font-bold">วิทยาลัยเทคนิคท่าหลวงซิเมนต์ไทยอนุสรณ์ ปีการศึกษา {toThaiDigits(applicant.academicYear)}</p>
+      <p className="mb-[2mm] whitespace-nowrap px-[24mm] text-center text-[12.5pt] font-bold">วิทยาลัยเทคนิคท่าหลวงซิเมนต์ไทยอนุสรณ์ ปีการศึกษา {toThaiDigits(applicant.academicYear)}</p>
 
       <Line>
         <span className="ml-auto">รหัสนักศึกษา</span><Fill w={34}>{applicant.studentId}</Fill>
