@@ -126,7 +126,7 @@ export function ApplyPage() {
       {qrProgram && (
         <p className="mt-4 inline-flex max-w-3xl items-center gap-2 rounded-control bg-gold-soft px-4 py-2 text-gold-ink">
           <QrCode className="size-5 shrink-0" aria-hidden="true" />
-          สมัครสาขา {qrProgram.track === 'pvc' ? 'ปวช.' : 'ปวส.'} {qrProgram.name} (เลือกให้แล้วจาก QR Code เปลี่ยนได้ในข้อ ๖)
+          สมัครสาขา {qrProgram.track === 'pvc' ? 'ปวช.' : 'ปวส.'} {qrProgram.name} (เลือกให้แล้วจาก QR Code เปลี่ยนได้ในข้อ 6)
         </p>
       )}
       {submitError && <Alert tone="danger" title="ส่งใบสมัครไม่สำเร็จ" className="mt-5 max-w-3xl">{submitError}</Alert>}
@@ -148,7 +148,7 @@ export function ApplyPage() {
             {errors.level && <p className="mt-2 text-sm text-danger">{errors.level}</p>}
           </Section>
 
-          <Section title="๑. ข้อมูลผู้สมัคร">
+          <Section title="1. ข้อมูลผู้สมัคร">
             <div className="grid gap-4 sm:grid-cols-[9rem_1fr_1fr]">
               <SelectField label="คำนำหน้า" required options={PREFIXES} {...bind('prefix')} />
               <TextField label="ชื่อ" required autoComplete="given-name" {...bind('firstName')} />
@@ -163,7 +163,7 @@ export function ApplyPage() {
             </div>
           </Section>
 
-          <Section title="๒–๓. บิดา มารดา" note="ไม่มีข้อมูลเว้นว่างได้">
+          <Section title="2–3. บิดา มารดา" note="ไม่มีข้อมูลเว้นว่างได้">
             <div className="grid gap-4 sm:grid-cols-[1fr_6rem_1fr]">
               <TextField label="ชื่อ-สกุลบิดา" {...bind('fatherName')} />
               <TextField label="อายุ (ปี)" inputMode="numeric" maxLength={3} {...bind('fatherAge')} />
@@ -174,7 +174,7 @@ export function ApplyPage() {
             </div>
           </Section>
 
-          <Section title="๔. ที่อยู่ปัจจุบันที่ติดต่อได้">
+          <Section title="4. ที่อยู่ปัจจุบันที่ติดต่อได้">
             <div className="grid gap-4 sm:grid-cols-4">
               <TextField label="บ้านเลขที่" required {...bind('houseNo')} />
               <TextField label="หมู่" inputMode="numeric" {...bind('moo')} />
@@ -188,7 +188,7 @@ export function ApplyPage() {
             </div>
           </Section>
 
-          <Section title="๕. การศึกษาปัจจุบัน">
+          <Section title="5. การศึกษาปัจจุบัน">
             <div className="grid gap-4 sm:grid-cols-[10rem_1fr]">
               <SelectField label="ระดับชั้น" required options={CURRENT_LEVELS} {...bind('currentLevel')} />
               <TextField label="โรงเรียน" required placeholder="เช่น โรงเรียนแก่งคอย" {...bind('schoolName')} />
@@ -203,7 +203,7 @@ export function ApplyPage() {
             </div>
           </Section>
 
-          <Section title="๖. สาขาวิชาที่ต้องการสมัคร">
+          <Section title="6. สาขาวิชาที่ต้องการสมัคร">
             {track === null && <p className="text-ink-muted">เลือกระดับที่ต้องการสมัครด้านบนก่อน รายชื่อสาขาจะขึ้นตามระดับ</p>}
             {track === 'pvs' && <SelectField label="สาขาวิชา (ปวส.)" required options={programOptions} {...bind('programPvs')} />}
             {track === 'pvc' && (
