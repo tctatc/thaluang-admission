@@ -36,7 +36,12 @@ var Domain = (() => {
     INPUT_FIELDS: () => INPUT_FIELDS,
     LEVELS: () => LEVELS,
     LEVEL_LABEL: () => LEVEL_LABEL,
+    MANUAL_KINDS: () => MANUAL_KINDS,
+    MANUAL_LABEL: () => MANUAL_LABEL,
     MAX_FILE_BYTES: () => MAX_FILE_BYTES,
+    MAX_MANUAL_BYTES: () => MAX_MANUAL_BYTES,
+    MAX_POSTER_BYTES: () => MAX_POSTER_BYTES,
+    NO_POSTER: () => NO_POSTER,
     PASSWORD_MIN: () => PASSWORD_MIN,
     PREFIXES: () => PREFIXES,
     PROGRAM_COLUMNS: () => PROGRAM_COLUMNS,
@@ -67,7 +72,9 @@ var Domain = (() => {
     attachDocument: () => attachDocument,
     bangkokDateKey: () => bangkokDateKey,
     bangkokDateParts: () => bangkokDateParts,
+    checkManual: () => checkManual,
     checkNewPassword: () => checkNewPassword,
+    checkPoster: () => checkPoster,
     checkStudentIdPattern: () => checkStudentIdPattern,
     checkUpload: () => checkUpload,
     computePublicStats: () => computePublicStats,
@@ -88,6 +95,7 @@ var Domain = (() => {
     isValidPhone: () => isValidPhone,
     isValidThaiId: () => isValidThaiId,
     isoFromParts: () => isoFromParts,
+    manualSettingKey: () => manualSettingKey,
     missingColumns: () => missingColumns,
     nextApplicationNo: () => nextApplicationNo,
     nextStudentId: () => nextStudentId,
@@ -98,6 +106,7 @@ var Domain = (() => {
     normalizeStaffInput: () => normalizeStaffInput,
     parseAnnouncements: () => parseAnnouncements,
     parseIsoDate: () => parseIsoDate,
+    parseManual: () => parseManual,
     parsePrograms: () => parsePrograms,
     parseSettings: () => parseSettings,
     programName: () => programName,
@@ -214,6 +223,11 @@ var Domain = (() => {
     "enrolledDate",
     "note"
   ];
+  var NO_POSTER = { fileId: "", url: "", width: 0, height: 0 };
+  var MANUAL_KINDS = ["applicant", "staff"];
+  var MANUAL_LABEL = { applicant: "\u0E04\u0E39\u0E48\u0E21\u0E37\u0E2D\u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E1C\u0E39\u0E49\u0E2A\u0E21\u0E31\u0E04\u0E23", staff: "\u0E04\u0E39\u0E48\u0E21\u0E37\u0E2D\u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E40\u0E08\u0E49\u0E32\u0E2B\u0E19\u0E49\u0E32\u0E17\u0E35\u0E48" };
+  var MAX_POSTER_BYTES = 5 * 1024 * 1024;
+  var MAX_MANUAL_BYTES = 15 * 1024 * 1024;
   var DEFAULT_SETTINGS = {
     academicYear: 2570,
     applicationsOpen: true,
@@ -566,6 +580,21 @@ var Domain = (() => {
     return { mime, problem: "" };
   }
   var extensionFor = (mime) => mime === "application/pdf" ? "pdf" : mime === "image/png" ? "png" : "jpg";
+  var mb = (bytes) => `${bytes / 1024 / 1024} MB`;
+  function checkPoster(head, size) {
+    const mime = sniffMime(head);
+    if (mime !== "image/jpeg" && mime !== "image/png") return { mime, problem: "\u0E42\u0E1B\u0E2A\u0E40\u0E15\u0E2D\u0E23\u0E4C\u0E15\u0E49\u0E2D\u0E07\u0E40\u0E1B\u0E47\u0E19\u0E23\u0E39\u0E1B JPG \u0E2B\u0E23\u0E37\u0E2D PNG" };
+    if (size <= 0) return { mime, problem: "\u0E44\u0E1F\u0E25\u0E4C\u0E27\u0E48\u0E32\u0E07\u0E40\u0E1B\u0E25\u0E48\u0E32" };
+    if (size > MAX_POSTER_BYTES) return { mime, problem: `\u0E23\u0E39\u0E1B\u0E43\u0E2B\u0E0D\u0E48\u0E40\u0E01\u0E34\u0E19 ${mb(MAX_POSTER_BYTES)}` };
+    return { mime, problem: "" };
+  }
+  function checkManual(head, size) {
+    const mime = sniffMime(head);
+    if (mime !== "application/pdf") return { mime, problem: "\u0E04\u0E39\u0E48\u0E21\u0E37\u0E2D\u0E15\u0E49\u0E2D\u0E07\u0E40\u0E1B\u0E47\u0E19\u0E44\u0E1F\u0E25\u0E4C PDF" };
+    if (size <= 0) return { mime, problem: "\u0E44\u0E1F\u0E25\u0E4C\u0E27\u0E48\u0E32\u0E07\u0E40\u0E1B\u0E25\u0E48\u0E32" };
+    if (size > MAX_MANUAL_BYTES) return { mime, problem: `\u0E44\u0E1F\u0E25\u0E4C\u0E43\u0E2B\u0E0D\u0E48\u0E40\u0E01\u0E34\u0E19 ${mb(MAX_MANUAL_BYTES)} \u0E25\u0E2D\u0E07\u0E1A\u0E35\u0E1A\u0E2D\u0E31\u0E14 PDF \u0E01\u0E48\u0E2D\u0E19` };
+    return { mime, problem: "" };
+  }
 
   // shared/service.ts
   function fail(code, message, issues) {
@@ -992,7 +1021,7 @@ var Domain = (() => {
     "updatedBy"
   ];
   var PROGRAM_COLUMNS = ["code", "track", "name", "active", "department", "quota"];
-  var ANNOUNCEMENT_COLUMNS = ["id", "title", "body", "pinned", "published", "createdAt", "updatedAt"];
+  var ANNOUNCEMENT_COLUMNS = ["id", "title", "body", "pinned", "published", "createdAt", "updatedAt", "imageFileId", "imageUrl", "imageWidth", "imageHeight"];
   var SETTINGS_COLUMNS = ["key", "value", "description"];
   var STAFF_COLUMNS = ["username", "displayName", "role", "status", "passwordSalt", "passwordHash", "tokenVersion", "lastLoginAt"];
   var AUDIT_COLUMNS = ["at", "actor", "action", "target", "detail"];
@@ -1068,11 +1097,28 @@ var Domain = (() => {
       pinned: truthy(col(row, "pinned")),
       published: truthy(col(row, "published")),
       createdAt: col(row, "createdAt"),
-      updatedAt: col(row, "updatedAt")
+      updatedAt: col(row, "updatedAt"),
+      // ชีตรุ่นก่อนยังไม่มีคอลัมน์รูป อ่านได้เป็นประกาศไม่มีโปสเตอร์
+      imageFileId: col(row, "imageFileId"),
+      imageUrl: col(row, "imageUrl"),
+      imageWidth: Number(col(row, "imageWidth")) || 0,
+      imageHeight: Number(col(row, "imageHeight")) || 0
     })).filter((item) => item.id !== "" && item.title !== "");
   }
   function announcementToRow(item) {
-    return [item.id, item.title, item.body, item.pinned ? "TRUE" : "FALSE", item.published ? "TRUE" : "FALSE", item.createdAt, item.updatedAt];
+    return [
+      item.id,
+      item.title,
+      item.body,
+      item.pinned ? "TRUE" : "FALSE",
+      item.published ? "TRUE" : "FALSE",
+      item.createdAt,
+      item.updatedAt,
+      item.imageFileId,
+      item.imageUrl,
+      item.imageWidth ? String(item.imageWidth) : "",
+      item.imageHeight ? String(item.imageHeight) : ""
+    ];
   }
   function parseSettings(rows) {
     var _a;
@@ -1099,6 +1145,17 @@ var Domain = (() => {
       if (value) settings[field] = value;
     }
     return { settings, problems };
+  }
+  var manualSettingKey = (kind) => `manual.${kind}`;
+  function parseManual(raw) {
+    var _a, _b;
+    try {
+      const value = JSON.parse(String(raw != null ? raw : ""));
+      if (!value || typeof value.fileId !== "string" || value.fileId === "") return null;
+      return { fileId: value.fileId, name: String((_a = value.name) != null ? _a : "\u0E04\u0E39\u0E48\u0E21\u0E37\u0E2D.pdf"), size: Number(value.size) || 0, updatedAt: String((_b = value.updatedAt) != null ? _b : "") };
+    } catch {
+      return null;
+    }
   }
 
   // shared/admin.ts
@@ -1151,7 +1208,7 @@ var Domain = (() => {
       (a) => a.academicYear === academicYear && a.level === "pvc" === (program.track === "pvc") && firstChoice(a) === program.code
     ).length;
   }
-  function saveAnnouncement(list, raw, ctx) {
+  function saveAnnouncement(list, raw, ctx, image) {
     var _a, _b;
     const source = raw && typeof raw === "object" ? raw : {};
     const title = text(source.title, 150);
@@ -1170,9 +1227,14 @@ var Domain = (() => {
       pinned: source.pinned === true,
       published: source.published !== false,
       createdAt: (_b = existing == null ? void 0 : existing.createdAt) != null ? _b : ctx.nowIso,
-      updatedAt: ctx.nowIso
+      updatedAt: ctx.nowIso,
+      ...posterFields(image != null ? image : existing ? { fileId: existing.imageFileId, url: existing.imageUrl, width: existing.imageWidth, height: existing.imageHeight } : NO_POSTER)
     };
     return existing ? list.map((item) => item.id === next.id ? next : item) : [next, ...list];
+  }
+  function posterFields(image) {
+    const size = (n) => Number.isFinite(n) && n > 0 && n <= 2e4 ? Math.round(n) : 0;
+    return { imageFileId: image.fileId, imageUrl: image.url, imageWidth: size(image.width), imageHeight: size(image.height) };
   }
   function deleteAnnouncement(list, id) {
     if (!list.some((item) => item.id === id)) fail("NOT_FOUND", "\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E1B\u0E23\u0E30\u0E01\u0E32\u0E28\u0E19\u0E35\u0E49");

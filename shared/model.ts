@@ -181,7 +181,30 @@ export interface Announcement {
   published: boolean;
   createdAt: string;
   updatedAt: string;
+  /** โปสเตอร์ประกอบ (ไม่มี = '') — imageUrl เปิดได้ตรงจากเบราว์เซอร์ ไม่ต้องผ่าน API */
+  imageFileId: string;
+  imageUrl: string;
+  /** ขนาดจริงของรูป ใช้จองพื้นที่ไว้ก่อนรูปโหลดเสร็จ หน้าจะได้ไม่กระโดด */
+  imageWidth: number;
+  imageHeight: number;
 }
+
+export interface PosterImage { fileId: string; url: string; width: number; height: number }
+export const NO_POSTER: PosterImage = { fileId: '', url: '', width: 0, height: 0 };
+
+/** คู่มือการใช้งาน (PDF) แยกฉบับผู้สมัครกับเจ้าหน้าที่ */
+export const MANUAL_KINDS = ['applicant', 'staff'] as const;
+export type ManualKind = (typeof MANUAL_KINDS)[number];
+export const MANUAL_LABEL: Record<ManualKind, string> = { applicant: 'คู่มือสำหรับผู้สมัคร', staff: 'คู่มือสำหรับเจ้าหน้าที่' };
+export interface StoredManual { fileId: string; name: string; size: number; updatedAt: string }
+export interface ManualInfo extends StoredManual {
+  /** เปิดอ่านในหน้าเว็บ (iframe) */
+  viewUrl: string;
+  downloadUrl: string;
+}
+
+export const MAX_POSTER_BYTES = 5 * 1024 * 1024;
+export const MAX_MANUAL_BYTES = 15 * 1024 * 1024;
 
 export interface Settings {
   /** ปีการศึกษา (พ.ศ.) ที่เปิดรับ */

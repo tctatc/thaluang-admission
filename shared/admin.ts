@@ -3,7 +3,7 @@
  * ทั้ง Apps Script และโหมดสาธิตเรียกชุดเดียวกัน (ผู้เรียกฝั่ง server ครอบด้วยล็อกเอง)
  */
 
-import { DEFAULT_SETTINGS, SETTING_TEXT_FIELDS, firstChoice, type Announcement, type Applicant, type Program, type Settings, type Track } from './model';
+import { DEFAULT_SETTINGS, NO_POSTER, SETTING_TEXT_FIELDS, firstChoice, type Announcement, type Applicant, type PosterImage, type Program, type Settings, type Track } from './model';
 import { checkStudentIdPattern } from './numbering';
 import { fail } from './service';
 import { toArabicDigits } from './thai';
@@ -68,7 +68,11 @@ export function countFirstChoice(applicants: readonly Applicant[], program: Prog
   ).length;
 }
 
-export function saveAnnouncement(list: readonly Announcement[], raw: unknown, ctx: { nowIso: string; newId: () => string }): Announcement[] {
+/**
+ * เพิ่ม/แก้ประกาศ — image: undefined = คงโปสเตอร์เดิม, NO_POSTER = เอาออก, อื่น ๆ = ใช้รูปใหม่
+ * ผู้เรียกเป็นคนอัปโหลด/ลบไฟล์จริง ฟังก์ชันนี้ดูแลเฉพาะข้อมูลในชีต
+ */
+export function saveAnnouncement(list: readonly Announcement[], raw: unknown, ctx: { nowIso: string; newId: () => string }, image?: PosterImage): Announcement[] {
   const source = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
   const title = text(source.title, 150);
   const body = text(source.body, 5000);
@@ -87,8 +91,14 @@ export function saveAnnouncement(list: readonly Announcement[], raw: unknown, ct
     published: source.published !== false,
     createdAt: existing?.createdAt ?? ctx.nowIso,
     updatedAt: ctx.nowIso,
+    ...posterFields(image ?? (existing ? { fileId: existing.imageFileId, url: existing.imageUrl, width: existing.imageWidth, height: existing.imageHeight } : NO_POSTER)),
   };
   return existing ? list.map((item) => (item.id === next.id ? next : item)) : [next, ...list];
+}
+
+function posterFields(image: PosterImage) {
+  const size = (n: number) => (Number.isFinite(n) && n > 0 && n <= 20000 ? Math.round(n) : 0);
+  return { imageFileId: image.fileId, imageUrl: image.url, imageWidth: size(image.width), imageHeight: size(image.height) };
 }
 
 export function deleteAnnouncement(list: readonly Announcement[], id: unknown): Announcement[] {

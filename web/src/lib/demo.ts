@@ -15,12 +15,12 @@ import {
   reviewDocument, setStatus, submitApplication, updateApplicant, type Ctx, type Repo,
 } from '@shared/service';
 import { deleteAnnouncement, normalizePrograms, normalizeSettings, publicAnnouncements, saveAnnouncement } from '@shared/admin';
-import type { Announcement, Program } from '@shared/model';
-import { checkUpload } from '@shared/files';
+import { MANUAL_KINDS, NO_POSTER, type Announcement, type ManualInfo, type ManualKind, type PosterImage, type Program, type StoredManual } from '@shared/model';
+import { checkManual, checkPoster, checkUpload } from '@shared/files';
 import { checkNewPassword } from '@shared/validate';
 import { normalizeStaffInput, staffChangeProblem, validateStaffInput, type StaffAccount } from '@shared/users';
 import { computePublicStats } from '@shared/stats';
-import type { Transport } from './api';
+import type { Manuals, Transport } from './api';
 import { ApiError } from './errors';
 import { fileStore, readStore, writeStore } from './storage';
 
@@ -59,10 +59,30 @@ function repo(): Repo {
 
 const settings = (): Settings => ({ ...DEFAULT_SETTINGS, ...load<Partial<Settings>>(KEY_SETTINGS, {}) });
 const programs = (): Program[] => load<Program[]>(KEY_PROGRAMS, SAMPLE_PROGRAMS);
-const announcements = (): Announcement[] => load<Announcement[]>(KEY_ANNOUNCEMENTS, [{
+const announcements = (): Announcement[] => load<Omit<Announcement, keyof typeof NO_POSTER_FIELDS>[]>(KEY_ANNOUNCEMENTS, [{
   id: 'demo-1', title: 'เปิดรับสมัครนักเรียน นักศึกษา รอบโควตา', body: 'สมัครออนไลน์ได้ตลอด 24 ชั่วโมง กรอกใบสมัครแล้วพิมพ์นำมายื่นพร้อมเอกสาร\nสอบถามงานรับสมัคร ในวันและเวลาราชการ',
   pinned: true, published: true, createdAt: '2026-11-01T02:00:00.000Z', updatedAt: '2026-11-01T02:00:00.000Z',
-}]);
+}]).map((item) => ({ ...NO_POSTER_FIELDS, ...item }));
+const NO_POSTER_FIELDS = { imageFileId: '', imageUrl: '', imageWidth: 0, imageHeight: 0 };
+const KEY_MANUALS = 'tla.demo.manuals.v1';
+/** ไฟล์โหมดสาธิตอยู่ใน IndexedDB หน้าเว็บอ่านผ่าน url แบบ idb:<key> (useFileUrl แปลงให้) */
+const idbUrl = (key: string) => `idb:${key}`;
+const manuals = (): Manuals => {
+  const stored = load<Partial<Record<ManualKind, StoredManual | null>>>(KEY_MANUALS, {});
+  const info = (m: StoredManual | null | undefined): ManualInfo | null => (m ? { ...m, viewUrl: idbUrl(m.fileId), downloadUrl: idbUrl(m.fileId) } : null);
+  return { applicant: info(stored.applicant), staff: info(stored.staff) };
+};
+
+async function demoMedia(dataBase64: string, check: typeof checkPoster): Promise<{ key: string; mime: string; size: number }> {
+  const base64 = dataBase64.replace(/^data:[^,]*,/, '');
+  const binary = atob(base64);
+  const result = check([...binary.slice(0, 8)].map((ch) => ch.charCodeAt(0)), binary.length);
+  if (result.problem) fail('VALIDATION', result.problem);
+  const key = `media_${crypto.randomUUID().slice(0, 12)}`;
+  await fileStore.put(key, `data:${result.mime};base64,${base64}`);
+  return { key, mime: result.mime, size: binary.length };
+}
+
 const bump = () => save(KEY_VERSION, load<number>(KEY_VERSION, 0) + 1);
 const ctx = (actor: string): Ctx => ({ nowIso: new Date().toISOString(), newId: () => `app_${crypto.randomUUID().slice(0, 16)}`, actor });
 
@@ -112,13 +132,14 @@ const handlers: Record<string, Handler> = {
     dataVersion: load<number>(KEY_VERSION, 0),
     config: handlers.config!({}, ''),
     announcements: publicAnnouncements(announcements()),
+    manual: manuals().applicant,
     stats: computePublicStats(repo().list(), programs(), settings().academicYear, new Date().toISOString()),
   }),
   staffBootstrap: (_payload, token) => {
     const staff = staffFromToken(token);
     return {
       staff: { username: staff.username, displayName: staff.displayName, role: staff.role },
-      settings: settings(), programs: programs(), applicants: repo().list(), dataVersion: load(KEY_VERSION, 0),
+      settings: settings(), programs: programs(), applicants: repo().list(), manuals: manuals(), dataVersion: load(KEY_VERSION, 0),
     };
   },
   publicStats: () => computePublicStats(repo().list(), programs(), settings().academicYear, new Date().toISOString()),
@@ -248,19 +269,52 @@ const handlers: Record<string, Handler> = {
   },
   announcements: () => ({ announcements: publicAnnouncements(announcements()) }),
   adminAnnouncements: (_payload, token) => { staffFromToken(token); return { announcements: announcements() }; },
-  saveAnnouncement: (payload, token) => {
+  saveAnnouncement: async (payload, token) => {
     requireAdmin(token);
-    const next = saveAnnouncement(announcements(), payload, { nowIso: new Date().toISOString(), newId: () => `ann_${crypto.randomUUID().slice(0, 12)}` });
+    const upload = payload.image as { dataBase64?: string; width?: number; height?: number } | undefined;
+    let image: PosterImage | undefined;
+    if (payload.removeImage === true) image = NO_POSTER;
+    else if (upload?.dataBase64) {
+      const media = await demoMedia(upload.dataBase64, checkPoster);
+      image = { fileId: media.key, url: idbUrl(media.key), width: Number(upload.width) || 0, height: Number(upload.height) || 0 };
+    }
+    const old = announcements().find((item) => item.id === payload.id)?.imageFileId ?? '';
+    const next = saveAnnouncement(announcements(), payload, { nowIso: new Date().toISOString(), newId: () => `ann_${crypto.randomUUID().slice(0, 12)}` }, image);
     save(KEY_ANNOUNCEMENTS, next);
+    if (image !== undefined && old && old !== image.fileId) await fileStore.remove(old);
     bump();
     return { announcements: next };
   },
-  deleteAnnouncement: (payload, token) => {
+  deleteAnnouncement: async (payload, token) => {
     requireAdmin(token);
+    const old = announcements().find((item) => item.id === payload.id)?.imageFileId ?? '';
     const next = deleteAnnouncement(announcements(), payload.id);
     save(KEY_ANNOUNCEMENTS, next);
+    if (old) await fileStore.remove(old);
     bump();
     return { announcements: next };
+  },
+  uploadManual: async (payload, token) => {
+    requireAdmin(token);
+    const kind = payload.kind as ManualKind;
+    if (!MANUAL_KINDS.includes(kind)) fail('BAD_REQUEST', 'ไม่รู้จักคู่มือชนิดนี้');
+    const media = await demoMedia(String(payload.dataBase64 ?? ''), checkManual);
+    const stored = load<Partial<Record<ManualKind, StoredManual | null>>>(KEY_MANUALS, {});
+    const old = stored[kind]?.fileId;
+    save(KEY_MANUALS, { ...stored, [kind]: { fileId: media.key, name: String(payload.name ?? 'คู่มือ.pdf'), size: media.size, updatedAt: new Date().toISOString() } });
+    if (old) await fileStore.remove(old);
+    bump();
+    return { manuals: manuals() };
+  },
+  deleteManual: async (payload, token) => {
+    requireAdmin(token);
+    const kind = payload.kind as ManualKind;
+    const stored = load<Partial<Record<ManualKind, StoredManual | null>>>(KEY_MANUALS, {});
+    const old = stored[kind]?.fileId;
+    save(KEY_MANUALS, { ...stored, [kind]: null });
+    if (old) await fileStore.remove(old);
+    bump();
+    return { manuals: manuals() };
   },
   updateApplicant: (payload, token) => {
     const staff = staffFromToken(token);

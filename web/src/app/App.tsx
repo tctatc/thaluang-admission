@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { Link, NavLink, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
-import { BarChart3, ClipboardCheck, ExternalLink, FileSearch, FlaskConical, Home, KeyRound, Layers, LogOut, Megaphone, PencilLine, QrCode, Settings as SettingsIcon, UserCog, Users } from 'lucide-react';
+import { BarChart3, BookOpen, ClipboardCheck, ExternalLink, FileSearch, FlaskConical, Home, KeyRound, Layers, LogOut, Megaphone, PencilLine, QrCode, Settings as SettingsIcon, UserCog, Users } from 'lucide-react';
 import { apiMode, type PublicConfig } from '../lib/api';
 import { useHome } from '../lib/publicData';
 import { cn, initialOf, Loading } from '../components/ui';
@@ -9,6 +9,8 @@ import { BottomNav, sheetRowClass, type MobileNavItem } from '../components/Mobi
 import { HomePage } from '../pages/HomePage';
 import { ApplyPage } from '../pages/ApplyPage';
 import { StatusPage } from '../pages/StatusPage';
+import { NewsPage } from '../pages/NewsPage';
+import { ManualPage } from '../pages/ManualPage';
 import { LoginPage } from '../pages/staff/LoginPage';
 // หน้าเจ้าหน้าที่ (และไลบรารี QR) โหลดเมื่อเปิดใช้จริง ผู้สมัครบนมือถือจึงไม่ต้องดาวน์โหลดโค้ดส่วนนี้
 const DashboardPage = lazy(() => import('../pages/staff/DashboardPage').then((m) => ({ default: m.DashboardPage })));
@@ -19,6 +21,7 @@ const ProgramsPage = lazy(() => import('../pages/staff/ProgramsPage').then((m) =
 const AnnouncementsPage = lazy(() => import('../pages/staff/AnnouncementsPage').then((m) => ({ default: m.AnnouncementsPage })));
 const AccountPage = lazy(() => import('../pages/staff/AccountPage').then((m) => ({ default: m.AccountPage })));
 const UsersPage = lazy(() => import('../pages/staff/UsersPage').then((m) => ({ default: m.UsersPage })));
+const StaffManualPage = lazy(() => import('../pages/staff/StaffManualPage').then((m) => ({ default: m.StaffManualPage })));
 const QrPage = lazy(() => import('../pages/staff/QrPage').then((m) => ({ default: m.QrPage })));
 import { StaffProvider, useStaff } from './staff';
 
@@ -29,6 +32,8 @@ export function App() {
         <Route index element={<HomePage />} />
         <Route path="apply" element={<ApplyPage />} />
         <Route path="status" element={<StatusPage />} />
+        <Route path="news" element={<NewsPage />} />
+        <Route path="manual" element={<ManualPage />} />
       </Route>
       <Route path="staff" element={<StaffProvider><StaffLayout /></StaffProvider>}>
         <Route index element={<Suspense fallback={<Loading />}><DashboardPage /></Suspense>} />
@@ -38,6 +43,7 @@ export function App() {
         <Route path="programs" element={<Suspense fallback={<Loading />}><ProgramsPage /></Suspense>} />
         <Route path="announcements" element={<Suspense fallback={<Loading />}><AnnouncementsPage /></Suspense>} />
         <Route path="qr" element={<Suspense fallback={<Loading />}><QrPage /></Suspense>} />
+        <Route path="manual" element={<Suspense fallback={<Loading />}><StaffManualPage /></Suspense>} />
         <Route path="users" element={<Suspense fallback={<Loading />}><UsersPage /></Suspense>} />
         <Route path="account" element={<Suspense fallback={<Loading />}><AccountPage /></Suspense>} />
       </Route>
@@ -87,6 +93,8 @@ function PublicLayout() {
         <div className="mx-auto flex min-h-14 max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-1.5 md:py-2">
           <Brand to="/" subtitle="รับสมัครนักเรียน นักศึกษาออนไลน์" />
           <nav aria-label="เมนูหลัก" className="hidden gap-1 md:flex">
+            <NavLink to="/news" className={link}>ประกาศ</NavLink>
+            <NavLink to="/manual" className={link}>คู่มือ</NavLink>
             <NavLink to="/apply" className={link}>สมัครเรียน</NavLink>
             <NavLink to="/status" className={link}>ตรวจสถานะ / พิมพ์ใบสมัคร</NavLink>
           </nav>
@@ -104,9 +112,9 @@ function PublicLayout() {
       </footer>
       <BottomNav
         label="เมนูหลัก (มือถือ)"
-        left={[{ to: '/', label: 'หน้าแรก', icon: Home, end: true }]}
+        left={[{ to: '/', label: 'หน้าแรก', icon: Home, end: true }, { to: '/news', label: 'ประกาศ', icon: Megaphone }]}
         center={{ to: '/apply', label: 'สมัครเรียน', icon: PencilLine }}
-        right={[{ to: '/status', label: 'ตรวจสถานะ', icon: FileSearch }]}
+        right={[{ to: '/status', label: 'ตรวจสถานะ', icon: FileSearch }, { to: '/manual', label: 'คู่มือ', icon: BookOpen }]}
       />
     </div>
   );
@@ -121,7 +129,7 @@ function StaffLayout() {
   const admin = staff.role === 'admin';
   const pending = applicants.filter((a) => a.status === 'submitted').length;
   const link = ({ isActive }: { isActive: boolean }) =>
-    cn('inline-flex min-h-11 items-center gap-2 rounded-control px-3 text-[15px] font-medium transition-colors', isActive ? 'bg-ink-inverse/15 text-ink-inverse' : 'text-ink-inverse/75 hover:text-ink-inverse');
+    cn('inline-flex min-h-11 items-center gap-1.5 rounded-control px-2.5 text-[15px] font-medium transition-colors', isActive ? 'bg-ink-inverse/15 text-ink-inverse' : 'text-ink-inverse/75 hover:text-ink-inverse');
   const more: MobileNavItem[] = [
     ...(admin ? [
       { to: '/staff/programs', label: 'ประเภทวิชา/สาขา และจำนวนรับ', icon: Layers },
@@ -129,6 +137,7 @@ function StaffLayout() {
       { to: '/staff/users', label: 'จัดการผู้ใช้', icon: UserCog },
       { to: '/staff/settings', label: 'ตั้งค่าการรับสมัคร', icon: SettingsIcon },
     ] : []),
+    { to: '/staff/manual', label: 'คู่มือการใช้งาน', icon: BookOpen },
     { to: '/staff/account', label: 'บัญชีของฉัน / เปลี่ยนรหัสผ่าน', icon: KeyRound },
     { to: '/', label: 'หน้าเว็บผู้สมัคร', icon: ExternalLink, end: true },
   ];
@@ -171,10 +180,13 @@ function StaffLayout() {
             )}
           </nav>
           <div className="flex items-center gap-1 text-sm">
+            <NavLink to="/staff/manual" title="คู่มือการใช้งาน" aria-label="คู่มือการใช้งาน" className={({ isActive }) => cn('inline-flex min-h-11 min-w-11 items-center justify-center rounded-control px-3 hover:bg-ink-inverse/10 hover:text-ink-inverse', isActive ? 'bg-ink-inverse/15 text-ink-inverse' : 'text-ink-inverse/80')}>
+              <BookOpen className="size-4" aria-hidden="true" />
+            </NavLink>
             <Link to="/" title="หน้าเว็บผู้สมัคร" aria-label="หน้าเว็บผู้สมัคร" className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-control px-3 text-ink-inverse/80 hover:bg-ink-inverse/10 hover:text-ink-inverse">
               <ExternalLink className="size-4" aria-hidden="true" /><span className="hidden 2xl:inline">หน้าเว็บผู้สมัคร</span>
             </Link>
-            <Link to="/staff/account" title="บัญชีของฉัน / เปลี่ยนรหัสผ่าน" className="inline-flex min-h-11 max-w-44 items-center gap-1.5 rounded-control px-3 text-ink-inverse/80 hover:bg-ink-inverse/10 hover:text-ink-inverse">
+            <Link to="/staff/account" title="บัญชีของฉัน / เปลี่ยนรหัสผ่าน" className="inline-flex min-h-11 max-w-40 items-center gap-1.5 rounded-control px-2.5 text-ink-inverse/80 hover:bg-ink-inverse/10 hover:text-ink-inverse">
               <KeyRound className="size-4 shrink-0" aria-hidden="true" /><span className="truncate">{staff.displayName}</span>
             </Link>
             <button type="button" onClick={logout} className="inline-flex min-h-11 items-center gap-1.5 rounded-control px-3 text-ink-inverse/80 hover:bg-ink-inverse/10 hover:text-ink-inverse">

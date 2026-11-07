@@ -1,4 +1,4 @@
-import { ALLOWED_MIME, MAX_FILE_BYTES } from './model';
+import { ALLOWED_MIME, MAX_FILE_BYTES, MAX_MANUAL_BYTES, MAX_POSTER_BYTES } from './model';
 
 /**
  * ตรวจชนิดไฟล์จากไบต์ต้นไฟล์ (magic number) ไม่เชื่อนามสกุลหรือ MIME ที่เบราว์เซอร์ส่งมา
@@ -23,3 +23,23 @@ export function checkUpload(head: readonly number[], size: number, imageOnly: bo
 
 export const extensionFor = (mime: string): string =>
   mime === 'application/pdf' ? 'pdf' : mime === 'image/png' ? 'png' : 'jpg';
+
+const mb = (bytes: number) => `${bytes / 1024 / 1024} MB`;
+
+/** โปสเตอร์ประกาศ: รูป JPG/PNG เท่านั้น */
+export function checkPoster(head: readonly number[], size: number): { mime: string; problem: string } {
+  const mime = sniffMime(head);
+  if (mime !== 'image/jpeg' && mime !== 'image/png') return { mime, problem: 'โปสเตอร์ต้องเป็นรูป JPG หรือ PNG' };
+  if (size <= 0) return { mime, problem: 'ไฟล์ว่างเปล่า' };
+  if (size > MAX_POSTER_BYTES) return { mime, problem: `รูปใหญ่เกิน ${mb(MAX_POSTER_BYTES)}` };
+  return { mime, problem: '' };
+}
+
+/** คู่มือ: PDF เท่านั้น */
+export function checkManual(head: readonly number[], size: number): { mime: string; problem: string } {
+  const mime = sniffMime(head);
+  if (mime !== 'application/pdf') return { mime, problem: 'คู่มือต้องเป็นไฟล์ PDF' };
+  if (size <= 0) return { mime, problem: 'ไฟล์ว่างเปล่า' };
+  if (size > MAX_MANUAL_BYTES) return { mime, problem: `ไฟล์ใหญ่เกิน ${mb(MAX_MANUAL_BYTES)} ลองบีบอัด PDF ก่อน` };
+  return { mime, problem: '' };
+}

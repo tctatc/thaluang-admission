@@ -108,6 +108,7 @@ function apiHandlers_() {
           dataVersion: getDataVersion_(),
           config: publicConfig_(),
           announcements: Domain.publicAnnouncements(readAnnouncements_()),
+          manual: readManuals_().applicant,
           stats: Domain.computePublicStats(sheetRepo_().list(), programs, settings.academicYear, nowIso_()),
         };
       });
@@ -193,6 +194,7 @@ function apiHandlers_() {
         settings: readSettings_(),
         programs: readPrograms_(),
         applicants: sheetRepo_().list(),
+        manuals: readManuals_(),
         dataVersion: getDataVersion_(),
       };
     },
@@ -295,27 +297,19 @@ function apiHandlers_() {
     },
 
     saveAnnouncement: function (payload, token) {
-      const staff = requireAdmin_(token);
-      const list = withScriptLock_(function () {
-        const next = Domain.saveAnnouncement(readAnnouncements_(), payload, { nowIso: nowIso_(), newId: newId_ });
-        writeAnnouncements_(next);
-        bumpDataVersion_();
-        return next;
-      });
-      audit_(staff.username, 'saveAnnouncement', String(payload.title || ''), '');
-      return { announcements: list };
+      return saveAnnouncementWithPoster_(requireAdmin_(token), payload);
     },
 
     deleteAnnouncement: function (payload, token) {
-      const staff = requireAdmin_(token);
-      const list = withScriptLock_(function () {
-        const next = Domain.deleteAnnouncement(readAnnouncements_(), payload.id);
-        writeAnnouncements_(next);
-        bumpDataVersion_();
-        return next;
-      });
-      audit_(staff.username, 'deleteAnnouncement', String(payload.id || ''), '');
-      return { announcements: list };
+      return deleteAnnouncementWithPoster_(requireAdmin_(token), payload);
+    },
+
+    uploadManual: function (payload, token) {
+      return uploadManual_(requireAdmin_(token), payload);
+    },
+
+    deleteManual: function (payload, token) {
+      return deleteManual_(requireAdmin_(token), payload);
     },
   };
 }

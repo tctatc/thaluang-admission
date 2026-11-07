@@ -7,7 +7,7 @@
 
 import {
   DEFAULT_SETTINGS, INPUT_FIELDS, SETTING_TEXT_FIELDS, STATUSES,
-  type Announcement, type Applicant, type Program, type Settings, type Status, type Track,
+  type Announcement, type Applicant, type ManualKind, type Program, type Settings, type Status, type StoredManual, type Track,
 } from './model';
 import { checkStudentIdPattern } from './numbering';
 
@@ -26,7 +26,7 @@ export const APPLICANT_COLUMNS = [
 ] as const;
 
 export const PROGRAM_COLUMNS = ['code', 'track', 'name', 'active', 'department', 'quota'] as const;
-export const ANNOUNCEMENT_COLUMNS = ['id', 'title', 'body', 'pinned', 'published', 'createdAt', 'updatedAt'] as const;
+export const ANNOUNCEMENT_COLUMNS = ['id', 'title', 'body', 'pinned', 'published', 'createdAt', 'updatedAt', 'imageFileId', 'imageUrl', 'imageWidth', 'imageHeight'] as const;
 export const SETTINGS_COLUMNS = ['key', 'value', 'description'] as const;
 export const STAFF_COLUMNS = ['username', 'displayName', 'role', 'status', 'passwordSalt', 'passwordHash', 'tokenVersion', 'lastLoginAt'] as const;
 export const AUDIT_COLUMNS = ['at', 'actor', 'action', 'target', 'detail'] as const;
@@ -106,12 +106,16 @@ export function parseAnnouncements(header: readonly unknown[], rows: readonly (r
       id: col(row, 'id'), title: col(row, 'title'), body: col(row, 'body'),
       pinned: truthy(col(row, 'pinned')), published: truthy(col(row, 'published')),
       createdAt: col(row, 'createdAt'), updatedAt: col(row, 'updatedAt'),
+      // ชีตรุ่นก่อนยังไม่มีคอลัมน์รูป อ่านได้เป็นประกาศไม่มีโปสเตอร์
+      imageFileId: col(row, 'imageFileId'), imageUrl: col(row, 'imageUrl'),
+      imageWidth: Number(col(row, 'imageWidth')) || 0, imageHeight: Number(col(row, 'imageHeight')) || 0,
     }))
     .filter((item) => item.id !== '' && item.title !== '');
 }
 
 export function announcementToRow(item: Announcement): string[] {
-  return [item.id, item.title, item.body, item.pinned ? 'TRUE' : 'FALSE', item.published ? 'TRUE' : 'FALSE', item.createdAt, item.updatedAt];
+  return [item.id, item.title, item.body, item.pinned ? 'TRUE' : 'FALSE', item.published ? 'TRUE' : 'FALSE', item.createdAt, item.updatedAt,
+    item.imageFileId, item.imageUrl, item.imageWidth ? String(item.imageWidth) : '', item.imageHeight ? String(item.imageHeight) : ''];
 }
 
 /** อ่านค่าตั้งค่าจากชีต — ค่าที่ผิดรูปใช้ค่าเริ่มต้นแทน และรายงานปัญหากลับไปให้ log */
@@ -137,4 +141,17 @@ export function parseSettings(rows: readonly (readonly unknown[])[]): { settings
     if (value) settings[field] = value;
   }
   return { settings, problems };
+}
+
+/** คู่มือเก็บในชีต Settings คีย์ manual.applicant / manual.staff เป็น JSON */
+export const manualSettingKey = (kind: ManualKind): string => `manual.${kind}`;
+
+export function parseManual(raw: unknown): StoredManual | null {
+  try {
+    const value = JSON.parse(String(raw ?? '')) as Partial<StoredManual>;
+    if (!value || typeof value.fileId !== 'string' || value.fileId === '') return null;
+    return { fileId: value.fileId, name: String(value.name ?? 'คู่มือ.pdf'), size: Number(value.size) || 0, updatedAt: String(value.updatedAt ?? '') };
+  } catch {
+    return null;
+  }
 }

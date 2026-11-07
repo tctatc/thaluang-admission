@@ -307,3 +307,43 @@ describe('บัญชีเจ้าหน้าที่', () => {
     expect(staffChangeProblem([list[0]!, { ...list[1]!, role: 'admin', status: 'disabled' }], 'staff1', 'admin', null)).toMatch(/อย่างน้อย 1 คน/);
   });
 });
+
+describe('โปสเตอร์ประกาศและคู่มือ', async () => {
+  const admin = await import('../admin');
+  const { checkPoster, checkManual } = await import('../files');
+  const { parseManual, parseAnnouncements, announcementToRow } = await import('../sheetRow');
+  const { ANNOUNCEMENT_COLUMNS } = await import('../sheetRow');
+  const { NO_POSTER } = await import('../model');
+  const c = { nowIso: '2026-11-07T00:00:00.000Z', newId: () => 'a1' };
+  const poster = { fileId: 'f1', url: 'https://x/f1', width: 1131, height: 1600 };
+
+  it('แนบ คงไว้ เปลี่ยน และเอาโปสเตอร์ออกได้', () => {
+    let list = admin.saveAnnouncement([], { title: 'รับสมัคร', body: 'รอบโควตา' }, c, poster);
+    expect(list[0]).toMatchObject({ imageFileId: 'f1', imageWidth: 1131, imageHeight: 1600 });
+    list = admin.saveAnnouncement(list, { id: 'a1', title: 'รับสมัคร (แก้)', body: 'รอบโควตา' }, c);
+    expect(list[0]!.imageFileId).toBe('f1');
+    list = admin.saveAnnouncement(list, { id: 'a1', title: 'รับสมัคร', body: 'x' }, c, NO_POSTER);
+    expect(list[0]).toMatchObject({ imageFileId: '', imageUrl: '', imageWidth: 0 });
+  });
+
+  it('ชีตประกาศรุ่นก่อน (ไม่มีคอลัมน์รูป) ยังอ่านได้ และเขียนกลับครบทุกคอลัมน์', () => {
+    const old = parseAnnouncements(['id', 'title', 'body', 'pinned', 'published', 'createdAt', 'updatedAt'], [['a', 'ข่าว', 'เนื้อหา', 'FALSE', 'TRUE', 'x', 'y']]);
+    expect(old[0]).toMatchObject({ imageFileId: '', imageWidth: 0 });
+    expect(announcementToRow(old[0]!)).toHaveLength(ANNOUNCEMENT_COLUMNS.length);
+  });
+
+  it('ตรวจชนิดไฟล์จากไบต์จริง: โปสเตอร์ = รูป, คู่มือ = PDF', () => {
+    const jpg = [0xff, 0xd8, 0xff, 0xe0]; const pdf = [0x25, 0x50, 0x44, 0x46];
+    expect(checkPoster(jpg, 1000).problem).toBe('');
+    expect(checkPoster(pdf, 1000).problem).toMatch(/JPG/);
+    expect(checkManual(pdf, 14 * 1024 * 1024).problem).toBe('');
+    expect(checkManual(pdf, 16 * 1024 * 1024).problem).toMatch(/ใหญ่เกิน/);
+    expect(checkManual(jpg, 1000).problem).toMatch(/PDF/);
+  });
+
+  it('อ่านข้อมูลคู่มือจากชีต ค่าว่างหรือเสียถือว่าไม่มี', () => {
+    expect(parseManual('{"fileId":"m1","name":"a.pdf","size":10,"updatedAt":"t"}')).toEqual({ fileId: 'm1', name: 'a.pdf', size: 10, updatedAt: 't' });
+    expect(parseManual('')).toBeNull();
+    expect(parseManual('{oops')).toBeNull();
+  });
+});

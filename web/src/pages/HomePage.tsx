@@ -1,11 +1,10 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, FileText, Megaphone, Paperclip, Pin, Printer, Search } from 'lucide-react';
+import { ArrowRight, FileText, Megaphone, Paperclip, Printer, Search } from 'lucide-react';
 import { DEFAULT_SETTINGS, DOC_INFO, DOC_KINDS, type Announcement } from '@shared/model';
-import { bangkokDateParts, thaiLongDate } from '@shared/thai';
 import { useHome } from '../lib/publicData';
 import { usePublicConfig } from '../app/App';
 import { PublicDashboard } from './PublicDashboard';
+import { AnnouncementCard } from '../components/AnnouncementCard';
 
 export function HomePage() {
   const { config } = usePublicConfig();
@@ -97,28 +96,25 @@ const Dot = () => <span className="mt-2.5 size-2 shrink-0 rotate-45 bg-gold" ari
 /** ประกาศจากผู้ดูแล — ไม่มีประกาศก็ไม่แสดงส่วนนี้ ยาวเกิน 3 รายการให้กดดูเพิ่ม */
 function Announcements() {
   const list: Announcement[] = useHome().home?.announcements ?? [];
-  const [all, setAll] = useState(false);
   if (list.length === 0) return null;
-  const shown = all ? list : list.slice(0, 3);
+  const shown = list.slice(0, 3);
   return (
     <section aria-labelledby="news" className="mx-auto max-w-6xl px-4 pt-12">
-      <h2 id="news" className="flex items-center gap-2 text-2xl text-brand-deep"><Megaphone className="size-6 text-brand" aria-hidden="true" />ประกาศ</h2>
-      <ul className="mt-4 grid gap-3 md:grid-cols-2">
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <h2 id="news" className="flex items-center gap-2 text-2xl text-brand-deep"><Megaphone className="size-6 text-brand" aria-hidden="true" />ประกาศ</h2>
+        {list.length > shown.length && (
+          <Link to="/news" className="inline-flex min-h-11 items-center gap-1.5 font-medium text-brand underline">
+            ดูประกาศทั้งหมด ({list.length})<ArrowRight className="size-4" aria-hidden="true" />
+          </Link>
+        )}
+      </div>
+      <ul className="mt-4 grid grid-cols-[minmax(0,1fr)] gap-3 md:grid-cols-2">
         {shown.map((item, index) => (
-          <li key={item.id} className={`enter rounded-card bg-surface p-5 shadow-card ring-1 ${item.pinned ? 'ring-gold' : 'ring-line'} ${index === 0 && shown.length % 2 === 1 ? 'md:col-span-2' : ''}`}>
-            <p className="flex items-start gap-2 text-lg font-semibold">
-              {item.pinned && <Pin className="mt-1 size-4 shrink-0 text-gold-ink" aria-label="ปักหมุด" />}{item.title}
-            </p>
-            <p className="text-sm text-ink-muted">{thaiLongDate(bangkokDateParts(item.updatedAt))}</p>
-            <p className="mt-2 whitespace-pre-line">{item.body}</p>
+          <li key={item.id} className={index === 0 && shown.length % 2 === 1 ? 'md:col-span-2' : ''}>
+            <AnnouncementCard item={item} wide={index === 0 && shown.length % 2 === 1} />
           </li>
         ))}
       </ul>
-      {list.length > 3 && (
-        <button type="button" onClick={() => setAll((v) => !v)} className="mt-3 min-h-11 font-medium text-brand underline">
-          {all ? 'ย่อ' : `ดูประกาศทั้งหมด (${list.length})`}
-        </button>
-      )}
     </section>
   );
 }

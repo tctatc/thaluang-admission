@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Applicant, Program, Settings } from '@shared/model';
-import { api, ApiError, type StaffUser } from '../lib/api';
+import { api, ApiError, type Manuals, type StaffUser } from '../lib/api';
 import { readStore, removeStore, writeStore } from '../lib/storage';
 
 /**
@@ -19,6 +19,8 @@ interface StaffState {
   settings: Settings | null;
   programs: Program[];
   applicants: Applicant[];
+  manuals: Manuals;
+  setManuals(manuals: Manuals): void;
   loading: boolean;
   error: string;
   login(username: string, password: string): Promise<void>;
@@ -39,6 +41,7 @@ export function StaffProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [programs, setPrograms] = useState<Program[]>([]);
   const [applicants, setApplicants] = useState<Applicant[]>([]);
+  const [manuals, setManuals] = useState<Manuals>({ applicant: null, staff: null });
   const [loading, setLoading] = useState(Boolean(token));
   const [error, setError] = useState('');
   const version = useRef(-1);
@@ -65,6 +68,7 @@ export function StaffProvider({ children }: { children: ReactNode }) {
       setSettings(data.settings);
       setPrograms(data.programs);
       setApplicants(data.applicants);
+      if (data.manuals) setManuals(data.manuals);
       version.current = data.dataVersion;
       setError('');
     } catch (cause) {
@@ -88,6 +92,7 @@ export function StaffProvider({ children }: { children: ReactNode }) {
           setPrograms(data.programs);
           setSettings(data.settings);
           setApplicants(data.applicants);
+          if (data.manuals) setManuals(data.manuals);
           version.current = data.dataVersion;
         }
       } catch {
@@ -115,7 +120,7 @@ export function StaffProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <StaffContext.Provider value={{ token, staff, settings, programs, applicants, loading, error, login, logout, changePassword, reload, replace, setSettings }}>
+    <StaffContext.Provider value={{ token, staff, settings, programs, applicants, manuals, setManuals, loading, error, login, logout, changePassword, reload, replace, setSettings }}>
       {children}
     </StaffContext.Provider>
   );

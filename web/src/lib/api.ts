@@ -11,7 +11,7 @@
  *  2. Apps Script ตอบ HTTP 200 เสมอ ต้องดูฟิลด์ ok ในเนื้อหา
  */
 
-import type { Announcement, Applicant, DocKind, DocState, Program, Settings, Status } from '@shared/model';
+import type { Announcement, Applicant, DocKind, DocState, ManualInfo, ManualKind, Program, Settings, Status } from '@shared/model';
 import type { StaffAccount, StaffAccountInput } from '@shared/users';
 import type { PublicApplicant } from '@shared/service';
 import type { PublicStats } from '@shared/stats';
@@ -77,7 +77,10 @@ export const apiMode = transport.mode;
 
 export interface SiteText { heroTitle: string; heroText: string; details: string }
 export interface PublicConfig { academicYear: number; applicationsOpen: boolean; programs: Program[]; siteText: SiteText }
-export interface HomeData { dataVersion: number; config: PublicConfig; announcements: Announcement[]; stats: PublicStats }
+export interface HomeData { dataVersion: number; config: PublicConfig; announcements: Announcement[]; stats: PublicStats; manual?: ManualInfo | null }
+export interface Manuals { applicant: ManualInfo | null; staff: ManualInfo | null }
+/** ส่งพร้อมประกาศ: image = รูปใหม่ (base64 ที่ย่อแล้ว), removeImage = เอาโปสเตอร์ออก, ไม่ส่งทั้งคู่ = คงเดิม */
+export interface PosterUpload { dataBase64: string; width: number; height: number }
 export interface Credentials { nationalId: string; birthDate: string }
 export interface StaffUser { username: string; displayName: string; role: 'admin' | 'staff' }
 
@@ -99,7 +102,7 @@ export const api = {
   updateStaff: (token: string, account: StaffAccountInput) => transport.call<{ users: StaffAccount[] }>('updateStaff', account, token),
   resetStaffPassword: (token: string, username: string, password: string) => transport.call<{ users: StaffAccount[] }>('resetStaffPassword', { username, password }, token),
   deleteStaff: (token: string, username: string) => transport.call<{ users: StaffAccount[] }>('deleteStaff', { username }, token),
-  staffBootstrap: (token: string) => transport.call<{ staff: StaffUser; settings: Settings; programs: Program[]; applicants: Applicant[]; dataVersion: number }>('staffBootstrap', {}, token),
+  staffBootstrap: (token: string) => transport.call<{ staff: StaffUser; settings: Settings; programs: Program[]; applicants: Applicant[]; manuals?: Manuals; dataVersion: number }>('staffBootstrap', {}, token),
   me: (token: string) => transport.call<{ staff: StaffUser; settings: Settings; programs: Program[]; dataVersion: number }>('me', {}, token),
   applicants: (token: string) => transport.call<{ applicants: Applicant[]; dataVersion: number }>('applicants', {}, token),
   getFile: (token: string, id: string, kind: DocKind) => transport.call<{ name: string; mime: string; dataBase64: string }>('getFile', { id, kind }, token),
@@ -111,7 +114,10 @@ export const api = {
   seedDemo: (token: string) => transport.call<{ added: number }>('seedDemo', {}, token),
   announcements: () => transport.call<{ announcements: Announcement[] }>('announcements'),
   adminAnnouncements: (token: string) => transport.call<{ announcements: Announcement[] }>('adminAnnouncements', {}, token),
-  saveAnnouncement: (token: string, item: Partial<Announcement>) => transport.call<{ announcements: Announcement[] }>('saveAnnouncement', item, token),
+  saveAnnouncement: (token: string, item: Partial<Announcement> & { image?: PosterUpload; removeImage?: boolean }) =>
+    transport.call<{ announcements: Announcement[] }>('saveAnnouncement', item, token),
+  uploadManual: (token: string, kind: ManualKind, name: string, dataBase64: string) => transport.call<{ manuals: Manuals }>('uploadManual', { kind, name, dataBase64 }, token),
+  deleteManual: (token: string, kind: ManualKind) => transport.call<{ manuals: Manuals }>('deleteManual', { kind }, token),
   deleteAnnouncement: (token: string, id: string) => transport.call<{ announcements: Announcement[] }>('deleteAnnouncement', { id }, token),
   savePrograms: (token: string, programs: Program[]) => transport.call<{ programs: Program[] }>('savePrograms', { programs }, token),
   updateApplicant: (token: string, id: string, applicant: unknown) => transport.call<{ applicant: Applicant }>('updateApplicant', { id, applicant }, token),
