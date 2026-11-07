@@ -268,8 +268,12 @@ export const SAMPLE_PROGRAMS: Program[] = [
 export const fullName = (a: Pick<ApplicationInput, 'prefix' | 'firstName' | 'lastName'>): string =>
   `${a.prefix}${a.firstName} ${a.lastName}`.trim();
 
-export const programName = (programs: readonly Program[], code: string): string =>
-  programs.find((program) => program.code === code)?.name ?? '';
+/** ชื่อสาขาจากรหัส — ต้องระบุระดับด้วย เพราะรหัสซ้ำกันข้ามระดับได้ (ปวช. 12 = การบัญชี, ปวส. 12 = เทคโนโลยีคอมพิวเตอร์) */
+export const programName = (programs: readonly Program[], code: string, track: Track): string =>
+  code ? programs.find((program) => program.track === track && program.code === code)?.name ?? '' : '';
+
+/** ระดับ (ปวช./ปวส.) ของผู้สมัคร จากระดับที่เลือกสมัคร */
+export const trackOfApplicant = (a: { level: string }): Track => (a.level === 'pvc' ? 'pvc' : 'pvs');
 
 /** สาขาที่ผู้สมัครเลือกเป็นอันดับแรก (ใช้กับสถิติและรหัสนักศึกษา) */
 export const firstChoice = (a: Pick<ApplicationInput, 'level' | 'programPvs' | 'programPvc1'>): string =>

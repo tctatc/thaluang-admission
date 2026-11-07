@@ -349,3 +349,12 @@ describe('โปสเตอร์ประกาศและคู่มือ'
     expect(parseManual('{oops')).toBeNull();
   });
 });
+
+describe('ชื่อสาขาต้องดูระดับด้วย', async () => {
+  const { programName } = await import('../model');
+  it('รหัสเดียวกันคนละระดับได้ชื่อคนละสาขา (ปวช. 12 / ปวส. 12)', () => {
+    expect(programName(SAMPLE_PROGRAMS, '12', 'pvc')).toBe('การบัญชี');
+    expect(programName(SAMPLE_PROGRAMS, '12', 'pvs')).toBe('เทคโนโลยีคอมพิวเตอร์');
+    expect(programName(SAMPLE_PROGRAMS, '', 'pvs')).toBe('');
+  });
+});

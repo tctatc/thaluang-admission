@@ -36,7 +36,7 @@ function sendMail_(to, subject, body) {
 }
 
 function choiceText_(applicant, programs) {
-  const name = Domain.programName(programs, Domain.firstChoice(applicant));
+  const name = Domain.programName(programs, Domain.firstChoice(applicant), Domain.trackOfApplicant(applicant));
   return `${Domain.LEVEL_LABEL[applicant.level] || ''} ${name}`.trim();
 }
 

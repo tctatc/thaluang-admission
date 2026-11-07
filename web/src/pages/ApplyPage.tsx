@@ -131,7 +131,7 @@ export function ApplyPage() {
       )}
       {submitError && <Alert tone="danger" title="ส่งใบสมัครไม่สำเร็จ" className="mt-5 max-w-3xl">{submitError}</Alert>}
 
-      <div className="mt-6 grid items-start gap-8 xl:grid-cols-[minmax(0,1fr)_540px]">
+      <div className="mt-6 grid items-start gap-8 xl:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)]">
         <form ref={formRef} onSubmit={submit} noValidate className="space-y-6">
           <Section title="ระดับที่ต้องการสมัคร" note="ตรงกับช่องติ๊กหัวใบสมัคร">
             <div data-field="level" role="radiogroup" aria-label="ระดับที่ต้องการสมัคร" className="grid gap-2 sm:grid-cols-3">

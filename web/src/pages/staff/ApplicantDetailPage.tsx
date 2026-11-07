@@ -36,8 +36,8 @@ export function ApplicantDetailPage() {
 
   const birth = parseIsoDate(applicant.birthDate);
   const choices = applicant.level === 'pvc'
-    ? [programName(programs, applicant.programPvc1), programName(programs, applicant.programPvc2)].filter(Boolean).map((name, i) => `${i + 1}. ${name}`).join('  ')
-    : programName(programs, applicant.programPvs);
+    ? [programName(programs, applicant.programPvc1, 'pvc'), programName(programs, applicant.programPvc2, 'pvc')].filter(Boolean).map((name, i) => `${i + 1}. ${name}`).join('  ')
+    : programName(programs, applicant.programPvs, 'pvs');
 
   return (
     <div className="space-y-5">

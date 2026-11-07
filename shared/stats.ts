@@ -54,7 +54,7 @@ export function computeStats(all: readonly Applicant[], programs: readonly Progr
     byStatus: STATUSES.map((status) => ({ label: STATUS_LABEL[status], value: list.filter((item) => item.status === status).length })),
     byLevel: LEVELS.map((level) => ({ label: LEVEL_LABEL[level], value: list.filter((item) => item.level === level).length })),
     byProgram: tally(list.map((item) => {
-      const name = programName(programs, firstChoice(item));
+      const name = programName(programs, firstChoice(item), item.level === 'pvc' ? 'pvc' : 'pvs');
       return name ? `${item.level === 'pvc' ? 'ปวช.' : 'ปวส.'} ${name}` : '';
     })),
     bySchool: tally(list.map((item) => item.schoolName), 10),

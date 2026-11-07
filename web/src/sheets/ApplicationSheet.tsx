@@ -99,13 +99,13 @@ export function ApplicationSheet({ data, programs, academicYear, photo }: {
         <span>สาขาวิชา</span><Fill grow>{data.currentMajor}</Fill>
       </Row>
       <Row y={172.9} x={18.5}>
-        <span>6.&nbsp; ต้องการสมัครเข้าเรียน&nbsp; ระดับ&nbsp; ปวส.&nbsp; สาขาวิชา</span><Fill grow>{isPvc ? '' : programName(programs, data.programPvs)}</Fill>
+        <span>6.&nbsp; ต้องการสมัครเข้าเรียน&nbsp; ระดับ&nbsp; ปวส.&nbsp; สาขาวิชา</span><Fill grow>{isPvc ? '' : programName(programs, data.programPvs, 'pvs')}</Fill>
       </Row>
       <Row y={181.6} x={61.5}>
-        <span>ระดับ&nbsp; ปวช.&nbsp; สาขาวิชาลำดับที่ 1.</span><Fill grow>{isPvc ? programName(programs, data.programPvc1) : ''}</Fill>
+        <span>ระดับ&nbsp; ปวช.&nbsp; สาขาวิชาลำดับที่ 1.</span><Fill grow>{isPvc ? programName(programs, data.programPvc1, 'pvc') : ''}</Fill>
       </Row>
       <Row y={190.4} x={82}>
-        <span>สาขาวิชาลำดับที่ 2.</span><Fill grow>{isPvc ? programName(programs, data.programPvc2) : ''}</Fill>
+        <span>สาขาวิชาลำดับที่ 2.</span><Fill grow>{isPvc ? programName(programs, data.programPvc2, 'pvc') : ''}</Fill>
       </Row>
 
       <Row y={200.8} x={26.5} right={null}>

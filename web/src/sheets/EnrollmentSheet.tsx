@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { LEVEL_LABEL, programName, type Applicant, type Level, type Program } from '@shared/model';
+import { LEVEL_LABEL, programName, trackOfApplicant, type Applicant, type Level, type Program } from '@shared/model';
 import { THAI_MONTHS, parseIsoDate, thaiLongDate } from '@shared/thai';
 import { Fill } from './parts';
 
@@ -45,7 +45,7 @@ export function EnrollmentSheet({ applicant, programs, photo }: { applicant: App
         เกิดวันที่<Fill w={12}>{birth ? String(birth.day) : ''}</Fill>เดือน<Fill w={26}>{birth ? THAI_MONTHS[birth.month - 1] : ''}</Fill>
         พ.ศ.<Fill w={16}>{birth ? String(birth.year + 543) : ''}</Fill>โทรศัพท์<Fill grow>{formatPhone(applicant.phone)}</Fill>
       </Line>
-      <Line>ระดับ<Fill w={52}>{LEVEL_LABEL[applicant.level as Level] ?? ''}</Fill>สาขาวิชาที่รับเข้า<Fill grow>{e ? programName(programs, e.admittedProgram) : ''}</Fill></Line>
+      <Line>ระดับ<Fill w={52}>{LEVEL_LABEL[applicant.level as Level] ?? ''}</Fill>สาขาวิชาที่รับเข้า<Fill grow>{e ? programName(programs, e.admittedProgram, trackOfApplicant(applicant)) : ''}</Fill></Line>
       <Line>ที่อยู่ปัจจุบัน<Fill grow left>{address}</Fill></Line>
       <Line>จบจาก / กำลังศึกษาที่<Fill grow left>{applicant.schoolName}</Fill>ระดับ<Fill w={18}>{applicant.currentLevel}</Fill>เกรดเฉลี่ย<Fill w={14}>{applicant.gpa}</Fill></Line>
 

@@ -126,6 +126,7 @@ var Domain = (() => {
     toCsv: () => toCsv,
     toThaiDigits: () => toThaiDigits,
     trackOf: () => trackOf,
+    trackOfApplicant: () => trackOfApplicant,
     updateApplicant: () => updateApplicant,
     validateApplication: () => validateApplication,
     validateEnrollment: () => validateEnrollment,
@@ -270,10 +271,11 @@ var Domain = (() => {
     { code: "17", track: "pvs", name: "\u0E01\u0E32\u0E23\u0E15\u0E25\u0E32\u0E14", active: true, department: "\u0E1E\u0E32\u0E13\u0E34\u0E0A\u0E22\u0E01\u0E23\u0E23\u0E21", quota: 25 }
   ];
   var fullName = (a) => `${a.prefix}${a.firstName} ${a.lastName}`.trim();
-  var programName = (programs, code) => {
+  var programName = (programs, code, track) => {
     var _a, _b;
-    return (_b = (_a = programs.find((program) => program.code === code)) == null ? void 0 : _a.name) != null ? _b : "";
+    return code ? (_b = (_a = programs.find((program) => program.track === track && program.code === code)) == null ? void 0 : _a.name) != null ? _b : "" : "";
   };
+  var trackOfApplicant = (a) => a.level === "pvc" ? "pvc" : "pvs";
   var firstChoice = (a) => a.level === "pvc" ? a.programPvc1 : a.programPvs;
 
   // shared/thai.ts
@@ -780,7 +782,7 @@ var Domain = (() => {
       byStatus: STATUSES.map((status) => ({ label: STATUS_LABEL[status], value: list.filter((item) => item.status === status).length })),
       byLevel: LEVELS.map((level) => ({ label: LEVEL_LABEL[level], value: list.filter((item) => item.level === level).length })),
       byProgram: tally(list.map((item) => {
-        const name = programName(programs, firstChoice(item));
+        const name = programName(programs, firstChoice(item), item.level === "pvc" ? "pvc" : "pvs");
         return name ? `${item.level === "pvc" ? "\u0E1B\u0E27\u0E0A." : "\u0E1B\u0E27\u0E2A."} ${name}` : "";
       })),
       bySchool: tally(list.map((item) => item.schoolName), 10),
@@ -880,9 +882,9 @@ var Domain = (() => {
       return (_a = LEVEL_LABEL[a.level]) != null ? _a : a.level;
     }],
     ["\u0E1B\u0E23\u0E30\u0E40\u0E20\u0E17\u0E27\u0E34\u0E0A\u0E32", (a, p) => departmentOf(a, p)],
-    ["\u0E2A\u0E32\u0E02\u0E32 \u0E1B\u0E27\u0E2A.", (a, p) => programName(p, a.programPvs)],
-    ["\u0E2A\u0E32\u0E02\u0E32 \u0E1B\u0E27\u0E0A. \u0E25\u0E33\u0E14\u0E31\u0E1A 1", (a, p) => programName(p, a.programPvc1)],
-    ["\u0E2A\u0E32\u0E02\u0E32 \u0E1B\u0E27\u0E0A. \u0E25\u0E33\u0E14\u0E31\u0E1A 2", (a, p) => programName(p, a.programPvc2)],
+    ["\u0E2A\u0E32\u0E02\u0E32 \u0E1B\u0E27\u0E2A.", (a, p) => programName(p, a.programPvs, "pvs")],
+    ["\u0E2A\u0E32\u0E02\u0E32 \u0E1B\u0E27\u0E0A. \u0E25\u0E33\u0E14\u0E31\u0E1A 1", (a, p) => programName(p, a.programPvc1, "pvc")],
+    ["\u0E2A\u0E32\u0E02\u0E32 \u0E1B\u0E27\u0E0A. \u0E25\u0E33\u0E14\u0E31\u0E1A 2", (a, p) => programName(p, a.programPvc2, "pvc")],
     ["\u0E04\u0E33\u0E19\u0E33\u0E2B\u0E19\u0E49\u0E32", (a) => a.prefix],
     ["\u0E0A\u0E37\u0E48\u0E2D", (a) => a.firstName],
     ["\u0E19\u0E32\u0E21\u0E2A\u0E01\u0E38\u0E25", (a) => a.lastName],
@@ -922,7 +924,7 @@ var Domain = (() => {
     }],
     ["\u0E2A\u0E32\u0E02\u0E32\u0E27\u0E34\u0E0A\u0E32", (a, p) => {
       var _a, _b;
-      return programName(p, (_b = (_a = a.enrollment) == null ? void 0 : _a.admittedProgram) != null ? _b : "");
+      return programName(p, (_b = (_a = a.enrollment) == null ? void 0 : _a.admittedProgram) != null ? _b : "", trackOfApplicant(a));
     }],
     ["\u0E1B\u0E35\u0E01\u0E32\u0E23\u0E28\u0E36\u0E01\u0E29\u0E32\u0E17\u0E35\u0E48\u0E40\u0E02\u0E49\u0E32", (a) => String(a.academicYear)],
     ["\u0E27\u0E38\u0E12\u0E34\u0E40\u0E14\u0E34\u0E21", (a) => a.currentLevel],

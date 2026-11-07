@@ -1,4 +1,4 @@
-import { LEVEL_LABEL, STATUS_LABEL, firstChoice, programName, type Applicant, type Level, type Program, type Status } from './model';
+import { LEVEL_LABEL, STATUS_LABEL, firstChoice, programName, trackOfApplicant, type Applicant, type Level, type Program, type Status } from './model';
 import { bangkokDateParts, parseIsoDate, thaiLongDate } from './thai';
 
 export type ExportPreset = 'full' | 'registry';
@@ -32,9 +32,9 @@ const FULL: Column[] = [
   ['สถานะ', (a) => STATUS_LABEL[a.status as Status] ?? a.status],
   ['ประเภทการสมัคร', (a) => LEVEL_LABEL[a.level as Level] ?? a.level],
   ['ประเภทวิชา', (a, p) => departmentOf(a, p)],
-  ['สาขา ปวส.', (a, p) => programName(p, a.programPvs)],
-  ['สาขา ปวช. ลำดับ 1', (a, p) => programName(p, a.programPvc1)],
-  ['สาขา ปวช. ลำดับ 2', (a, p) => programName(p, a.programPvc2)],
+  ['สาขา ปวส.', (a, p) => programName(p, a.programPvs, 'pvs')],
+  ['สาขา ปวช. ลำดับ 1', (a, p) => programName(p, a.programPvc1, 'pvc')],
+  ['สาขา ปวช. ลำดับ 2', (a, p) => programName(p, a.programPvc2, 'pvc')],
   ['คำนำหน้า', (a) => a.prefix],
   ['ชื่อ', (a) => a.firstName],
   ['นามสกุล', (a) => a.lastName],
@@ -74,7 +74,7 @@ const REGISTRY: Column[] = [
   ['วันเดือนปีเกิด', (a) => thaiSlashDate(a.birthDate)],
   ['ระดับการศึกษา', (a) => (a.level === 'pvc' ? 'ปวช.' : 'ปวส.')],
   ['รหัสสาขาวิชา', (a) => a.enrollment?.admittedProgram ?? ''],
-  ['สาขาวิชา', (a, p) => programName(p, a.enrollment?.admittedProgram ?? '')],
+  ['สาขาวิชา', (a, p) => programName(p, a.enrollment?.admittedProgram ?? '', trackOfApplicant(a))],
   ['ปีการศึกษาที่เข้า', (a) => String(a.academicYear)],
   ['วุฒิเดิม', (a) => a.currentLevel],
   ['สถานศึกษาเดิม', (a) => a.schoolName],
