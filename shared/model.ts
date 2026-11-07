@@ -196,7 +196,8 @@ export const NO_POSTER: PosterImage = { fileId: '', url: '', width: 0, height: 0
 export const MANUAL_KINDS = ['applicant', 'staff'] as const;
 export type ManualKind = (typeof MANUAL_KINDS)[number];
 export const MANUAL_LABEL: Record<ManualKind, string> = { applicant: 'คู่มือสำหรับผู้สมัคร', staff: 'คู่มือสำหรับเจ้าหน้าที่' };
-export interface StoredManual { fileId: string; name: string; size: number; updatedAt: string }
+/** คู่มือเป็นได้ทั้ง PDF หรือรูป (อินโฟกราฟิก) — รูปแสดงเต็มความกว้างในหน้าเว็บได้ทันที */
+export interface StoredManual { fileId: string; name: string; size: number; updatedAt: string; mime: string }
 export interface ManualInfo extends StoredManual {
   /** เปิดอ่านในหน้าเว็บ (iframe) */
   viewUrl: string;

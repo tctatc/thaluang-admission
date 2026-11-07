@@ -332,17 +332,19 @@ describe('โปสเตอร์ประกาศและคู่มือ'
     expect(announcementToRow(old[0]!)).toHaveLength(ANNOUNCEMENT_COLUMNS.length);
   });
 
-  it('ตรวจชนิดไฟล์จากไบต์จริง: โปสเตอร์ = รูป, คู่มือ = PDF', () => {
+  it('ตรวจชนิดไฟล์จากไบต์จริง: โปสเตอร์ = รูป, คู่มือ = PDF หรือรูป', () => {
     const jpg = [0xff, 0xd8, 0xff, 0xe0]; const pdf = [0x25, 0x50, 0x44, 0x46];
     expect(checkPoster(jpg, 1000).problem).toBe('');
     expect(checkPoster(pdf, 1000).problem).toMatch(/JPG/);
     expect(checkManual(pdf, 14 * 1024 * 1024).problem).toBe('');
     expect(checkManual(pdf, 16 * 1024 * 1024).problem).toMatch(/ใหญ่เกิน/);
-    expect(checkManual(jpg, 1000).problem).toMatch(/PDF/);
+    expect(checkManual(jpg, 1000).problem).toBe('');
+    expect(checkManual([0x4d, 0x5a, 0, 0], 1000).problem).toMatch(/PDF/);
   });
 
   it('อ่านข้อมูลคู่มือจากชีต ค่าว่างหรือเสียถือว่าไม่มี', () => {
-    expect(parseManual('{"fileId":"m1","name":"a.pdf","size":10,"updatedAt":"t"}')).toEqual({ fileId: 'm1', name: 'a.pdf', size: 10, updatedAt: 't' });
+    expect(parseManual('{"fileId":"m1","name":"a.pdf","size":10,"updatedAt":"t"}')).toEqual({ fileId: 'm1', name: 'a.pdf', size: 10, updatedAt: 't', mime: 'application/pdf' });
+    expect(parseManual('{"fileId":"m2","name":"a.png","size":10,"updatedAt":"t","mime":"image/png"}')!.mime).toBe('image/png');
     expect(parseManual('')).toBeNull();
     expect(parseManual('{oops')).toBeNull();
   });

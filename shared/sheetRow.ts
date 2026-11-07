@@ -150,7 +150,8 @@ export function parseManual(raw: unknown): StoredManual | null {
   try {
     const value = JSON.parse(String(raw ?? '')) as Partial<StoredManual>;
     if (!value || typeof value.fileId !== 'string' || value.fileId === '') return null;
-    return { fileId: value.fileId, name: String(value.name ?? 'คู่มือ.pdf'), size: Number(value.size) || 0, updatedAt: String(value.updatedAt ?? '') };
+    const mime = value.mime === 'image/jpeg' || value.mime === 'image/png' ? value.mime : 'application/pdf';
+    return { fileId: value.fileId, name: String(value.name ?? 'คู่มือ.pdf'), size: Number(value.size) || 0, updatedAt: String(value.updatedAt ?? ''), mime };
   } catch {
     return null;
   }

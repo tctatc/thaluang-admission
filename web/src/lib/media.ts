@@ -46,10 +46,35 @@ export async function preparePoster(file: File): Promise<PreparedPoster> {
   return { dataBase64: dataUrl, width: canvas.width, height: canvas.height, previewUrl: URL.createObjectURL(blob) };
 }
 
-export async function readManualPdf(file: File): Promise<string> {
-  const check = checkManual(await headOf(file), file.size);
+/**
+ * คู่มือ: PDF ส่งตามเดิม / รูปอินโฟกราฟิกย่อด้านยาวสุดไม่เกิน 3200px
+ * (ใหญ่กว่าโปสเตอร์ เพราะอินโฟกราฟิกยาวและมีตัวหนังสือเล็กเต็มแผ่น)
+ */
+export async function readManualFile(file: File): Promise<{ dataBase64: string; name: string }> {
+  const head = await headOf(file);
+  const isPdf = head[0] === 0x25 && head[1] === 0x50;
+  const precheck = checkManual(head, isPdf ? file.size : 1);
+  if (precheck.problem) throw new Error(precheck.problem);
+  if (isPdf) return { dataBase64: await readAsDataUrl(file), name: file.name };
+  const blob = await shrinkToJpeg(file, 3200, 0.92);
+  const check = checkManual(await headOf(blob), blob.size);
   if (check.problem) throw new Error(check.problem);
-  return readAsDataUrl(file);
+  return { dataBase64: await readAsDataUrl(blob), name: file.name.replace(/\.(png|jpe?g)$/i, '') + '.jpg' };
+}
+
+async function shrinkToJpeg(file: File, maxEdge: number, quality: number): Promise<Blob> {
+  const bitmap = await createImageBitmap(file).catch(() => null);
+  if (!bitmap) throw new Error('เปิดรูปนี้ไม่ได้ ไฟล์อาจเสีย ลองเลือกไฟล์อื่น');
+  const scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  const context = canvas.getContext('2d')!;
+  context.fillStyle = '#fff';
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+  return new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('ย่อรูปไม่สำเร็จ'))), 'image/jpeg', quality));
 }
 
 /**

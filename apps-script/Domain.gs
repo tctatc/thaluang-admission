@@ -590,9 +590,9 @@ var Domain = (() => {
   }
   function checkManual(head, size) {
     const mime = sniffMime(head);
-    if (mime !== "application/pdf") return { mime, problem: "\u0E04\u0E39\u0E48\u0E21\u0E37\u0E2D\u0E15\u0E49\u0E2D\u0E07\u0E40\u0E1B\u0E47\u0E19\u0E44\u0E1F\u0E25\u0E4C PDF" };
+    if (!ALLOWED_MIME.includes(mime)) return { mime, problem: "\u0E04\u0E39\u0E48\u0E21\u0E37\u0E2D\u0E15\u0E49\u0E2D\u0E07\u0E40\u0E1B\u0E47\u0E19\u0E44\u0E1F\u0E25\u0E4C PDF \u0E2B\u0E23\u0E37\u0E2D\u0E23\u0E39\u0E1B JPG / PNG" };
     if (size <= 0) return { mime, problem: "\u0E44\u0E1F\u0E25\u0E4C\u0E27\u0E48\u0E32\u0E07\u0E40\u0E1B\u0E25\u0E48\u0E32" };
-    if (size > MAX_MANUAL_BYTES) return { mime, problem: `\u0E44\u0E1F\u0E25\u0E4C\u0E43\u0E2B\u0E0D\u0E48\u0E40\u0E01\u0E34\u0E19 ${mb(MAX_MANUAL_BYTES)} \u0E25\u0E2D\u0E07\u0E1A\u0E35\u0E1A\u0E2D\u0E31\u0E14 PDF \u0E01\u0E48\u0E2D\u0E19` };
+    if (size > MAX_MANUAL_BYTES) return { mime, problem: `\u0E44\u0E1F\u0E25\u0E4C\u0E43\u0E2B\u0E0D\u0E48\u0E40\u0E01\u0E34\u0E19 ${mb(MAX_MANUAL_BYTES)} \u0E25\u0E2D\u0E07\u0E1A\u0E35\u0E1A\u0E2D\u0E31\u0E14\u0E44\u0E1F\u0E25\u0E4C\u0E01\u0E48\u0E2D\u0E19` };
     return { mime, problem: "" };
   }
 
@@ -1152,7 +1152,8 @@ var Domain = (() => {
     try {
       const value = JSON.parse(String(raw != null ? raw : ""));
       if (!value || typeof value.fileId !== "string" || value.fileId === "") return null;
-      return { fileId: value.fileId, name: String((_a = value.name) != null ? _a : "\u0E04\u0E39\u0E48\u0E21\u0E37\u0E2D.pdf"), size: Number(value.size) || 0, updatedAt: String((_b = value.updatedAt) != null ? _b : "") };
+      const mime = value.mime === "image/jpeg" || value.mime === "image/png" ? value.mime : "application/pdf";
+      return { fileId: value.fileId, name: String((_a = value.name) != null ? _a : "\u0E04\u0E39\u0E48\u0E21\u0E37\u0E2D.pdf"), size: Number(value.size) || 0, updatedAt: String((_b = value.updatedAt) != null ? _b : ""), mime };
     } catch {
       return null;
     }

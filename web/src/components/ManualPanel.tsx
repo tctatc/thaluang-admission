@@ -4,7 +4,8 @@ import { MANUAL_LABEL, MAX_MANUAL_BYTES, type ManualInfo, type ManualKind } from
 import { bangkokDateParts, thaiLongDate } from '@shared/thai';
 import { api, errorMessage, type Manuals } from '../lib/api';
 import { formatBytes } from '../lib/files';
-import { readManualPdf, useFileUrl } from '../lib/media';
+import { readManualFile, useFileUrl } from '../lib/media';
+import { Poster } from './Poster';
 import { Dialog } from './Dialog';
 import { Alert, Button, cn } from './ui';
 
@@ -17,7 +18,9 @@ export function ManualPanel({ kind, info, manage }: {
   kind: ManualKind; info: ManualInfo | null;
   manage?: { token: string; onChange: (manuals: Manuals) => void };
 }) {
-  const [reading, setReading] = useState(false);
+  // เปิดหน้ามาเห็นคู่มือเลย ไม่ต้องกดปุ่มก่อน
+  const [reading, setReading] = useState(true);
+  const isImage = Boolean(info && info.mime !== 'application/pdf');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -30,9 +33,9 @@ export function ManualPanel({ kind, info, manage }: {
     setBusy(true);
     setError('');
     try {
-      const dataBase64 = await readManualPdf(file);
-      manage.onChange((await api.uploadManual(manage.token, kind, file.name, dataBase64)).manuals);
-      setReading(false);
+      const prepared = await readManualFile(file);
+      manage.onChange((await api.uploadManual(manage.token, kind, prepared.name, prepared.dataBase64)).manuals);
+      setReading(true);
     } catch (cause) {
       setError(errorMessage(cause));
     } finally {
@@ -48,7 +51,6 @@ export function ManualPanel({ kind, info, manage }: {
     try {
       manage.onChange((await api.deleteManual(manage.token, kind)).manuals);
       setConfirmDelete(false);
-      setReading(false);
     } catch (cause) {
       setError(errorMessage(cause));
     } finally {
@@ -69,7 +71,7 @@ export function ManualPanel({ kind, info, manage }: {
               {info.updatedAt && <span className="block">ปรับปรุงเมื่อ {thaiLongDate(bangkokDateParts(info.updatedAt))}</span>}
             </p>
           ) : (
-            <p className="text-sm text-ink-muted">{manage ? 'ยังไม่มีไฟล์คู่มือ อัปโหลดไฟล์ PDF เพื่อให้เปิดอ่านได้' : 'ยังไม่มีไฟล์คู่มือ PDF ดูวิธีใช้งานแบบย่อด้านล่างได้'}</p>
+            <p className="text-sm text-ink-muted">{manage ? 'ยังไม่มีไฟล์คู่มือ อัปโหลดไฟล์ PDF หรือรูปเพื่อให้เปิดอ่านได้' : 'ยังไม่มีไฟล์คู่มือ ดูวิธีใช้งานแบบย่อด้านล่างได้'}</p>
           )}
         </div>
       </div>
@@ -77,22 +79,22 @@ export function ManualPanel({ kind, info, manage }: {
       <div className="mt-4 flex flex-wrap gap-2">
         {info && (
           <>
-            <Button onClick={() => setReading((v) => !v)} aria-expanded={reading} disabled={!view}
+            {!isImage && <Button onClick={() => setReading((v) => !v)} aria-expanded={reading} disabled={!view}
               icon={reading ? <X className="size-4" aria-hidden="true" /> : <BookOpen className="size-4" aria-hidden="true" />}>
               {reading ? 'ปิดคู่มือ' : 'เปิดคู่มือการใช้งาน'}
-            </Button>
+            </Button>}
             <a href={download || undefined} download={info.name} target="_blank" rel="noreferrer"
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control bg-surface px-4 font-medium text-ink ring-1 ring-inset ring-line-strong hover:bg-sunken">
-              <Download className="size-4" aria-hidden="true" />ดาวน์โหลด PDF
+              <Download className="size-4" aria-hidden="true" />{isImage ? 'ดาวน์โหลดรูป' : 'ดาวน์โหลด PDF'}
             </a>
           </>
         )}
         {manage && (
           <>
-            <input ref={inputRef} type="file" accept="application/pdf,.pdf" className="sr-only" tabIndex={-1} aria-hidden="true"
+            <input ref={inputRef} type="file" accept="application/pdf,.pdf,image/jpeg,image/png" className="sr-only" tabIndex={-1} aria-hidden="true"
               onChange={(event) => void upload(event.target.files?.[0])} />
             <Button variant="secondary" loading={busy} onClick={() => inputRef.current?.click()} icon={<Upload className="size-4" aria-hidden="true" />}>
-              {info ? 'เปลี่ยนไฟล์' : 'อัปโหลด PDF'}
+              {info ? 'เปลี่ยนไฟล์' : 'อัปโหลดคู่มือ'}
             </Button>
             {info && (
               <Button variant="ghost" className="text-danger hover:bg-danger-soft" disabled={busy} onClick={() => setConfirmDelete(true)} icon={<Trash2 className="size-4" aria-hidden="true" />}>
@@ -102,10 +104,16 @@ export function ManualPanel({ kind, info, manage }: {
           </>
         )}
       </div>
-      {manage && <p className="mt-2 text-sm text-ink-muted">ไฟล์ PDF ไม่เกิน {MAX_MANUAL_BYTES / 1024 / 1024} MB เปลี่ยนไฟล์แล้วฉบับเก่าถูกลบให้อัตโนมัติ</p>}
+      {manage && <p className="mt-2 text-sm text-ink-muted">ไฟล์ PDF หรือรูป JPG / PNG ไม่เกิน {MAX_MANUAL_BYTES / 1024 / 1024} MB รูปจะแสดงเต็มความกว้างหน้าเว็บทันที เปลี่ยนไฟล์แล้วฉบับเก่าถูกลบให้อัตโนมัติ</p>}
       {error && <Alert tone="danger" className="mt-3">{error}</Alert>}
 
-      {reading && view && (
+      {isImage && info && (
+        <div className="mt-4">
+          <Poster url={info.viewUrl} width={0} height={0} title={MANUAL_LABEL[kind]} maxHeight="none" className="bg-surface" />
+          <p className="mt-2 text-sm text-ink-muted">แตะที่รูปเพื่อดูภาพใหญ่ หรือกด "เปิดในแท็บใหม่" แล้วซูมด้วยนิ้ว</p>
+        </div>
+      )}
+      {!isImage && reading && view && (
         <div className="mt-4">
           <iframe src={view} title={MANUAL_LABEL[kind]} className={cn('h-[78dvh] w-full rounded-control bg-sunken ring-1 ring-line')} />
           <a href={view} target="_blank" rel="noreferrer" className="mt-2 inline-flex min-h-11 items-center gap-1.5 font-medium text-brand underline">

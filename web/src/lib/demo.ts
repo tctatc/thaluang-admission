@@ -69,7 +69,7 @@ const KEY_MANUALS = 'tla.demo.manuals.v1';
 const idbUrl = (key: string) => `idb:${key}`;
 const manuals = (): Manuals => {
   const stored = load<Partial<Record<ManualKind, StoredManual | null>>>(KEY_MANUALS, {});
-  const info = (m: StoredManual | null | undefined): ManualInfo | null => (m ? { ...m, viewUrl: idbUrl(m.fileId), downloadUrl: idbUrl(m.fileId) } : null);
+  const info = (m: StoredManual | null | undefined): ManualInfo | null => (m ? { ...m, mime: m.mime || 'application/pdf', viewUrl: idbUrl(m.fileId), downloadUrl: idbUrl(m.fileId) } : null);
   return { applicant: info(stored.applicant), staff: info(stored.staff) };
 };
 
@@ -301,7 +301,7 @@ const handlers: Record<string, Handler> = {
     const media = await demoMedia(String(payload.dataBase64 ?? ''), checkManual);
     const stored = load<Partial<Record<ManualKind, StoredManual | null>>>(KEY_MANUALS, {});
     const old = stored[kind]?.fileId;
-    save(KEY_MANUALS, { ...stored, [kind]: { fileId: media.key, name: String(payload.name ?? 'คู่มือ.pdf'), size: media.size, updatedAt: new Date().toISOString() } });
+    save(KEY_MANUALS, { ...stored, [kind]: { fileId: media.key, name: String(payload.name ?? 'คู่มือ.pdf'), size: media.size, updatedAt: new Date().toISOString(), mime: media.mime } });
     if (old) await fileStore.remove(old);
     bump();
     return { manuals: manuals() };

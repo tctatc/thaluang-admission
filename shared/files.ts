@@ -35,11 +35,11 @@ export function checkPoster(head: readonly number[], size: number): { mime: stri
   return { mime, problem: '' };
 }
 
-/** คู่มือ: PDF เท่านั้น */
+/** คู่มือ: PDF หรือรูป JPG/PNG (อินโฟกราฟิกที่ทำเป็นรูป) */
 export function checkManual(head: readonly number[], size: number): { mime: string; problem: string } {
   const mime = sniffMime(head);
-  if (mime !== 'application/pdf') return { mime, problem: 'คู่มือต้องเป็นไฟล์ PDF' };
+  if (!(ALLOWED_MIME as readonly string[]).includes(mime)) return { mime, problem: 'คู่มือต้องเป็นไฟล์ PDF หรือรูป JPG / PNG' };
   if (size <= 0) return { mime, problem: 'ไฟล์ว่างเปล่า' };
-  if (size > MAX_MANUAL_BYTES) return { mime, problem: `ไฟล์ใหญ่เกิน ${mb(MAX_MANUAL_BYTES)} ลองบีบอัด PDF ก่อน` };
+  if (size > MAX_MANUAL_BYTES) return { mime, problem: `ไฟล์ใหญ่เกิน ${mb(MAX_MANUAL_BYTES)} ลองบีบอัดไฟล์ก่อน` };
   return { mime, problem: '' };
 }

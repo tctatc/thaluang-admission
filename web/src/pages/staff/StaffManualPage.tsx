@@ -11,7 +11,7 @@ export function StaffManualPage() {
       <div>
         <h1 className="text-2xl font-bold text-brand-deep">คู่มือการใช้งาน</h1>
         <p className="text-sm text-ink-muted">
-          {manage ? 'อัปโหลดไฟล์ PDF แยกฉบับผู้สมัครกับเจ้าหน้าที่ ฉบับผู้สมัครขึ้นที่เมนู "คู่มือ" บนหน้าเว็บผู้สมัคร' : 'คู่มือและวิธีใช้งานระบบสำหรับเจ้าหน้าที่'}
+          {manage ? 'อัปโหลดไฟล์ PDF หรือรูป แยกฉบับผู้สมัครกับเจ้าหน้าที่ ฉบับผู้สมัครขึ้นที่เมนู "คู่มือ" บนหน้าเว็บผู้สมัคร' : 'คู่มือและวิธีใช้งานระบบสำหรับเจ้าหน้าที่'}
         </p>
       </div>
       <ManualPanel kind="staff" info={manuals.staff} {...(manage ? { manage } : {})} />

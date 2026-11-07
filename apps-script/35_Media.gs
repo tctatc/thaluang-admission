@@ -1,5 +1,5 @@
 /**
- * โปสเตอร์ประกาศและคู่มือการใช้งาน (PDF)
+ * โปสเตอร์ประกาศและคู่มือการใช้งาน (PDF หรือรูป)
  *
  * ต่างจากเอกสารผู้สมัคร (30_Files) ตรงที่ไฟล์ชุดนี้ตั้งเป็น "ทุกคนที่มีลิงก์ดูได้"
  * เพราะเป็นของเผยแพร่อยู่แล้ว และให้เบราว์เซอร์โหลดตรงจาก Google ได้เร็ว ไม่ต้องผ่าน Apps Script ที่ตอบช้า
@@ -92,9 +92,11 @@ function deleteAnnouncementWithPoster_(staff, payload) {
 
 function manualInfo_(stored) {
   if (!stored) return null;
+  const image = stored.mime !== 'application/pdf';
   return {
-    fileId: stored.fileId, name: stored.name, size: stored.size, updatedAt: stored.updatedAt,
-    viewUrl: `https://drive.google.com/file/d/${stored.fileId}/preview`,
+    fileId: stored.fileId, name: stored.name, size: stored.size, updatedAt: stored.updatedAt, mime: stored.mime,
+    // รูปแสดงตรงด้วย <img> (ขนาดใหญ่พอให้อ่านตัวหนังสือในอินโฟกราฟิกได้) / PDF เปิดผ่านตัวแสดงของ Drive
+    viewUrl: image ? `https://drive.google.com/thumbnail?id=${stored.fileId}&sz=w2400` : `https://drive.google.com/file/d/${stored.fileId}/preview`,
     downloadUrl: `https://drive.google.com/uc?export=download&id=${stored.fileId}`,
   };
 }
@@ -116,14 +118,14 @@ function manualKind_(kind) {
 function uploadManual_(staff, payload) {
   const kind = manualKind_(payload.kind);
   const upload = decodeMedia_(payload.dataBase64, Domain.checkManual);
-  const name = String(payload.name || 'คู่มือ.pdf').replace(/[\\/:*?"<>|]/g, '').slice(0, 120) || 'คู่มือ.pdf';
+  const name = String(payload.name || `คู่มือ.${Domain.extensionFor(upload.mime)}`).replace(/[\\/:*?"<>|]/g, '').slice(0, 120) || `คู่มือ.${Domain.extensionFor(upload.mime)}`;
   const fileId = publicFile_('คู่มือ', upload, `${Domain.MANUAL_LABEL[kind]}-${name}`);
   let oldFileId = '';
   try {
     withScriptLock_(function () {
       const old = readManuals_()[kind];
       oldFileId = old ? old.fileId : '';
-      writeSetting_(Domain.manualSettingKey(kind), JSON.stringify({ fileId: fileId, name: name, size: upload.bytes.length, updatedAt: nowIso_() }));
+      writeSetting_(Domain.manualSettingKey(kind), JSON.stringify({ fileId: fileId, name: name, size: upload.bytes.length, updatedAt: nowIso_(), mime: upload.mime }));
       bumpDataVersion_();
     });
   } catch (error) {
