@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Sparkles, Star } from 'lucide-react';
+import { FEATURES } from '../../lib/features';
 import { computeStats, schoolsByProgram, type Count } from '@shared/stats';
 import { QuotaTable } from '../PublicDashboard';
 import { THAI_MONTHS, parseIsoDate } from '@shared/thai';
@@ -39,9 +40,9 @@ export function DashboardPage() {
         <Link to="/staff/applicants?status=submitted" className="inline-flex min-h-11 items-center rounded-control bg-brand px-4 font-medium text-ink-inverse hover:bg-brand-hover">
           ตรวจใบสมัครที่รออยู่ ({stats.waitingReview})
         </Link>
-        <Link to="/staff/feedback" className="inline-flex min-h-11 items-center gap-1.5 rounded-control px-4 font-medium text-brand ring-1 ring-inset ring-line-strong hover:bg-brand-soft">
+        {FEATURES.feedback && <Link to="/staff/feedback" className="inline-flex min-h-11 items-center gap-1.5 rounded-control px-4 font-medium text-brand ring-1 ring-inset ring-line-strong hover:bg-brand-soft">
           <Star className="size-4" aria-hidden="true" />ผลประเมินความพึงพอใจ
-        </Link>
+        </Link>}
         </div>
       </div>
 

@@ -10,6 +10,7 @@ import { formatBytes, prepareFile } from '../lib/files';
 import { ApplicationSheet } from '../sheets/ApplicationSheet';
 import { ScaledSheet } from '../sheets/parts';
 import { FeedbackCard } from '../components/FeedbackCard';
+import { FEATURES } from '../lib/features';
 import type { Feedback } from '@shared/feedback';
 
 const STEPS: { label: string; done: (status: Status) => boolean }[] = [
@@ -96,7 +97,7 @@ export function StatusPage() {
             </ul>
           </Panel>
 
-          <FeedbackCard key={applicant.id} cred={cred} initial={feedback} />
+          {FEATURES.feedback && <FeedbackCard key={applicant.id} cred={cred} initial={feedback} />}
 
           <Button variant="ghost" onClick={signOut} icon={<LogOut className="size-4" aria-hidden="true" />}>ออกจากหน้านี้ (เครื่องใช้ร่วมกันควรกด)</Button>
         </div>

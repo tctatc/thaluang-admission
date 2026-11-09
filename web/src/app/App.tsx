@@ -5,6 +5,7 @@ import { apiMode, type PublicConfig } from '../lib/api';
 import { useHome } from '../lib/publicData';
 import { cn, initialOf, Loading } from '../components/ui';
 import { InstallApp } from '../components/InstallApp';
+import { FEATURES } from '../lib/features';
 import { BottomNav, sheetRowClass, type MobileNavItem } from '../components/MobileNav';
 import { HomePage } from '../pages/HomePage';
 import { ApplyPage } from '../pages/ApplyPage';
@@ -139,7 +140,7 @@ function StaffLayout() {
       { to: '/staff/users', label: 'จัดการผู้ใช้', icon: UserCog },
       { to: '/staff/settings', label: 'ตั้งค่าการรับสมัคร', icon: SettingsIcon },
     ] : []),
-    { to: '/staff/feedback', label: 'ผลประเมินความพึงพอใจ', icon: Star },
+    ...(FEATURES.feedback ? [{ to: '/staff/feedback', label: 'ผลประเมินความพึงพอใจ', icon: Star }] : []),
     { to: '/staff/manual', label: 'คู่มือการใช้งาน', icon: BookOpen },
     { to: '/staff/account', label: 'บัญชีของฉัน / เปลี่ยนรหัสผ่าน', icon: KeyRound },
     { to: '/', label: 'หน้าเว็บผู้สมัคร', icon: ExternalLink, end: true },
