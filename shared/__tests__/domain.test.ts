@@ -381,3 +381,29 @@ describe('ลบใบสมัครทดสอบแล้วเลื่อ�
     expect(plan).toMatchObject({ remove: [], renames: [], missing: ['Q70-0003'] });
   });
 });
+
+describe('แบบประเมินความพึงพอใจ', async () => {
+  const fb = await import('../feedback');
+  const app = (n: number, year = 2570) => ({ id: `id${n}`, appNo: `Q70-000${n}`, academicYear: year, level: 'pvc' });
+  it('ต้องตอบครบ 1–5 ทุกข้อ คนเดิมตอบซ้ำ = แก้ของเดิม', () => {
+    expect(() => fb.upsertFeedback([], app(1), { ease: 5, speed: 6, overall: '๔' }, 't1')).toThrow(/ครบทุกข้อ/);
+    let { list } = fb.upsertFeedback([], app(1), { ease: 5, speed: 4, overall: '๔', comment: '  ดีมาก  ' }, 't1');
+    expect(list[0]).toMatchObject({ overall: 4, comment: 'ดีมาก' });
+    ({ list } = fb.upsertFeedback(list, app(1), { ease: 3, speed: 3, overall: 3 }, 't2'));
+    expect(list).toHaveLength(1);
+    expect(list[0]).toMatchObject({ overall: 3, createdAt: 't1', updatedAt: 't2' });
+  });
+  it('สรุป x̄ S.D. และแปลผล 5 ระดับแบบรายงานสถานศึกษา', () => {
+    let list: import('../feedback').Feedback[] = [];
+    [[5, 5, 5], [4, 5, 4], [5, 4, 5], [3, 4, 4]].forEach(([ease, speed, overall], i) => {
+      list = fb.upsertFeedback(list, app(i + 1), { ease, speed, overall }, `t${i}`).list;
+    });
+    list = fb.upsertFeedback(list, app(9, 2569), { ease: 1, speed: 1, overall: 1 }, 'old').list;
+    const s = fb.summarizeFeedback(list, 2570);
+    expect(s.count).toBe(4);
+    expect(s.items[0]).toMatchObject({ key: 'ease', mean: 4.25, sd: 0.96, level: 'มาก', counts: [2, 1, 1, 0, 0] });
+    expect(s.items[1]).toMatchObject({ mean: 4.5, level: 'มาก' });
+    expect(fb.interpretMean(4.51)).toBe('มากที่สุด');
+    expect(fb.summarizeFeedback(list, null).count).toBe(5);
+  });
+});

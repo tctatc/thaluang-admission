@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { Link, NavLink, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
-import { BarChart3, BookOpen, ClipboardCheck, ExternalLink, FileSearch, FlaskConical, Home, KeyRound, Layers, LogOut, Megaphone, PencilLine, QrCode, Settings as SettingsIcon, UserCog, Users } from 'lucide-react';
+import { BarChart3, BookOpen, ClipboardCheck, ExternalLink, FileSearch, FlaskConical, Home, KeyRound, Layers, LogOut, Megaphone, PencilLine, QrCode, Settings as SettingsIcon, Star, UserCog, Users } from 'lucide-react';
 import { apiMode, type PublicConfig } from '../lib/api';
 import { useHome } from '../lib/publicData';
 import { cn, initialOf, Loading } from '../components/ui';
@@ -22,6 +22,7 @@ const AnnouncementsPage = lazy(() => import('../pages/staff/AnnouncementsPage').
 const AccountPage = lazy(() => import('../pages/staff/AccountPage').then((m) => ({ default: m.AccountPage })));
 const UsersPage = lazy(() => import('../pages/staff/UsersPage').then((m) => ({ default: m.UsersPage })));
 const StaffManualPage = lazy(() => import('../pages/staff/StaffManualPage').then((m) => ({ default: m.StaffManualPage })));
+const FeedbackPage = lazy(() => import('../pages/staff/FeedbackPage').then((m) => ({ default: m.FeedbackPage })));
 const QrPage = lazy(() => import('../pages/staff/QrPage').then((m) => ({ default: m.QrPage })));
 import { StaffProvider, useStaff } from './staff';
 
@@ -44,6 +45,7 @@ export function App() {
         <Route path="announcements" element={<Suspense fallback={<Loading />}><AnnouncementsPage /></Suspense>} />
         <Route path="qr" element={<Suspense fallback={<Loading />}><QrPage /></Suspense>} />
         <Route path="manual" element={<Suspense fallback={<Loading />}><StaffManualPage /></Suspense>} />
+        <Route path="feedback" element={<Suspense fallback={<Loading />}><FeedbackPage /></Suspense>} />
         <Route path="users" element={<Suspense fallback={<Loading />}><UsersPage /></Suspense>} />
         <Route path="account" element={<Suspense fallback={<Loading />}><AccountPage /></Suspense>} />
       </Route>
@@ -137,6 +139,7 @@ function StaffLayout() {
       { to: '/staff/users', label: 'จัดการผู้ใช้', icon: UserCog },
       { to: '/staff/settings', label: 'ตั้งค่าการรับสมัคร', icon: SettingsIcon },
     ] : []),
+    { to: '/staff/feedback', label: 'ผลประเมินความพึงพอใจ', icon: Star },
     { to: '/staff/manual', label: 'คู่มือการใช้งาน', icon: BookOpen },
     { to: '/staff/account', label: 'บัญชีของฉัน / เปลี่ยนรหัสผ่าน', icon: KeyRound },
     { to: '/', label: 'หน้าเว็บผู้สมัคร', icon: ExternalLink, end: true },

@@ -11,3 +11,4 @@ export * from './exportData';
 export * from './sheetRow';
 export * from './admin';
 export * from './users';
+export * from './feedback';

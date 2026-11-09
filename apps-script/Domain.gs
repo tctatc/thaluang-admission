@@ -33,6 +33,8 @@ var Domain = (() => {
     DOC_STATE_LABEL: () => DOC_STATE_LABEL,
     ENROLLMENT_FIELDS: () => ENROLLMENT_FIELDS,
     EXPORT_PRESET_LABEL: () => EXPORT_PRESET_LABEL,
+    FEEDBACK_COLUMNS: () => FEEDBACK_COLUMNS,
+    FEEDBACK_ITEMS: () => FEEDBACK_ITEMS,
     INPUT_FIELDS: () => INPUT_FIELDS,
     LEVELS: () => LEVELS,
     LEVEL_LABEL: () => LEVEL_LABEL,
@@ -47,12 +49,14 @@ var Domain = (() => {
     PROGRAM_COLUMNS: () => PROGRAM_COLUMNS,
     PROVINCES: () => PROVINCES,
     SAMPLE_PROGRAMS: () => SAMPLE_PROGRAMS,
+    SCORE_LABEL: () => SCORE_LABEL,
     SETTINGS_COLUMNS: () => SETTINGS_COLUMNS,
     SETTING_TEXT_FIELDS: () => SETTING_TEXT_FIELDS,
     SHEET_ANNOUNCEMENTS: () => SHEET_ANNOUNCEMENTS,
     SHEET_APPLICANTS: () => SHEET_APPLICANTS,
     SHEET_AUDIT: () => SHEET_AUDIT,
     SHEET_BACKUP_FOLDER: () => SHEET_BACKUP_FOLDER,
+    SHEET_FEEDBACK: () => SHEET_FEEDBACK,
     SHEET_PROGRAMS: () => SHEET_PROGRAMS,
     SHEET_SETTINGS: () => SHEET_SETTINGS,
     SHEET_STAFF: () => SHEET_STAFF,
@@ -88,10 +92,12 @@ var Domain = (() => {
     exportTable: () => exportTable,
     extensionFor: () => extensionFor,
     fail: () => fail,
+    feedbackToRow: () => feedbackToRow,
     findByCredentials: () => findByCredentials,
     firstChoice: () => firstChoice,
     fullName: () => fullName,
     getApplicant: () => getApplicant,
+    interpretMean: () => interpretMean,
     isValidPhone: () => isValidPhone,
     isValidThaiId: () => isValidThaiId,
     isoFromParts: () => isoFromParts,
@@ -100,11 +106,13 @@ var Domain = (() => {
     nextApplicationNo: () => nextApplicationNo,
     nextStudentId: () => nextStudentId,
     normalizeEnrollment: () => normalizeEnrollment,
+    normalizeFeedback: () => normalizeFeedback,
     normalizeInput: () => normalizeInput,
     normalizePrograms: () => normalizePrograms,
     normalizeSettings: () => normalizeSettings,
     normalizeStaffInput: () => normalizeStaffInput,
     parseAnnouncements: () => parseAnnouncements,
+    parseFeedback: () => parseFeedback,
     parseIsoDate: () => parseIsoDate,
     parseManual: () => parseManual,
     parsePrograms: () => parsePrograms,
@@ -122,6 +130,7 @@ var Domain = (() => {
     sniffMime: () => sniffMime,
     staffChangeProblem: () => staffChangeProblem,
     submitApplication: () => submitApplication,
+    summarizeFeedback: () => summarizeFeedback,
     thaiLongDate: () => thaiLongDate,
     toArabicDigits: () => toArabicDigits,
     toCsv: () => toCsv,
@@ -129,6 +138,7 @@ var Domain = (() => {
     trackOf: () => trackOf,
     trackOfApplicant: () => trackOfApplicant,
     updateApplicant: () => updateApplicant,
+    upsertFeedback: () => upsertFeedback,
     validateApplication: () => validateApplication,
     validateEnrollment: () => validateEnrollment,
     validateStaffInput: () => validateStaffInput
@@ -1018,6 +1028,7 @@ var Domain = (() => {
   var SHEET_STAFF = "Staff";
   var SHEET_AUDIT = "Audit";
   var SHEET_ANNOUNCEMENTS = "Announcements";
+  var SHEET_FEEDBACK = "Feedback";
   var SHEET_BACKUP_FOLDER = "\u0E2A\u0E33\u0E23\u0E2D\u0E07\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2D\u0E31\u0E15\u0E42\u0E19\u0E21\u0E31\u0E15\u0E34";
   var APPLICANT_COLUMNS = [
     "id",
@@ -1315,5 +1326,90 @@ var Domain = (() => {
     if (!after.some((u) => u.role === "admin" && u.status === "active")) return "\u0E15\u0E49\u0E2D\u0E07\u0E21\u0E35\u0E1C\u0E39\u0E49\u0E14\u0E39\u0E41\u0E25\u0E23\u0E30\u0E1A\u0E1A\u0E17\u0E35\u0E48\u0E43\u0E0A\u0E49\u0E07\u0E32\u0E19\u0E44\u0E14\u0E49\u0E2D\u0E22\u0E48\u0E32\u0E07\u0E19\u0E49\u0E2D\u0E22 1 \u0E04\u0E19";
     return "";
   }
+
+  // shared/feedback.ts
+  var FEEDBACK_ITEMS = [
+    { key: "ease", label: "\u0E23\u0E30\u0E1A\u0E1A\u0E43\u0E0A\u0E49\u0E07\u0E32\u0E19\u0E07\u0E48\u0E32\u0E22 \u0E40\u0E02\u0E49\u0E32\u0E43\u0E08\u0E44\u0E14\u0E49\u0E17\u0E31\u0E19\u0E17\u0E35" },
+    { key: "speed", label: "\u0E01\u0E23\u0E2D\u0E01\u0E41\u0E25\u0E30\u0E2A\u0E48\u0E07\u0E43\u0E1A\u0E2A\u0E21\u0E31\u0E04\u0E23\u0E44\u0E14\u0E49\u0E23\u0E27\u0E14\u0E40\u0E23\u0E47\u0E27" },
+    { key: "overall", label: "\u0E04\u0E27\u0E32\u0E21\u0E1E\u0E36\u0E07\u0E1E\u0E2D\u0E43\u0E08\u0E42\u0E14\u0E22\u0E23\u0E27\u0E21\u0E15\u0E48\u0E2D\u0E01\u0E32\u0E23\u0E2A\u0E21\u0E31\u0E04\u0E23\u0E2D\u0E2D\u0E19\u0E44\u0E25\u0E19\u0E4C" }
+  ];
+  var SCORE_LABEL = { 5: "\u0E21\u0E32\u0E01\u0E17\u0E35\u0E48\u0E2A\u0E38\u0E14", 4: "\u0E21\u0E32\u0E01", 3: "\u0E1B\u0E32\u0E19\u0E01\u0E25\u0E32\u0E07", 2: "\u0E19\u0E49\u0E2D\u0E22", 1: "\u0E19\u0E49\u0E2D\u0E22\u0E17\u0E35\u0E48\u0E2A\u0E38\u0E14" };
+  var FEEDBACK_COLUMNS = ["applicantId", "appNo", "academicYear", "level", "ease", "speed", "overall", "comment", "createdAt", "updatedAt"];
+  var score = (value) => {
+    const n = Number(toArabicDigits(String(value != null ? value : "")));
+    return Number.isInteger(n) && n >= 1 && n <= 5 ? n : 0;
+  };
+  function normalizeFeedback(raw) {
+    const source = raw && typeof raw === "object" ? raw : {};
+    const answers = { ease: score(source.ease), speed: score(source.speed), overall: score(source.overall) };
+    const missing = FEEDBACK_ITEMS.filter((item) => answers[item.key] === 0);
+    if (missing.length) fail("VALIDATION", "\u0E01\u0E23\u0E38\u0E13\u0E32\u0E43\u0E2B\u0E49\u0E04\u0E30\u0E41\u0E19\u0E19\u0E43\u0E2B\u0E49\u0E04\u0E23\u0E1A\u0E17\u0E38\u0E01\u0E02\u0E49\u0E2D", missing.map((item) => ({ field: item.key, message: "\u0E40\u0E25\u0E37\u0E2D\u0E01\u0E04\u0E30\u0E41\u0E19\u0E19 1\u20135" })));
+    const comment = typeof source.comment === "string" ? source.comment.replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, "").trim().slice(0, 500) : "";
+    return { ...answers, comment };
+  }
+  function upsertFeedback(list, applicant, raw, nowIso) {
+    var _a;
+    const answers = normalizeFeedback(raw);
+    const existing = list.find((item) => item.applicantId === applicant.id);
+    const saved = {
+      applicantId: applicant.id,
+      appNo: applicant.appNo,
+      academicYear: applicant.academicYear,
+      level: applicant.level,
+      ...answers,
+      createdAt: (_a = existing == null ? void 0 : existing.createdAt) != null ? _a : nowIso,
+      updatedAt: nowIso
+    };
+    return { list: existing ? list.map((item) => item === existing ? saved : item) : [...list, saved], saved };
+  }
+  function interpretMean(mean) {
+    if (mean >= 4.51) return "\u0E21\u0E32\u0E01\u0E17\u0E35\u0E48\u0E2A\u0E38\u0E14";
+    if (mean >= 3.51) return "\u0E21\u0E32\u0E01";
+    if (mean >= 2.51) return "\u0E1B\u0E32\u0E19\u0E01\u0E25\u0E32\u0E07";
+    if (mean >= 1.51) return "\u0E19\u0E49\u0E2D\u0E22";
+    return mean > 0 ? "\u0E19\u0E49\u0E2D\u0E22\u0E17\u0E35\u0E48\u0E2A\u0E38\u0E14" : "-";
+  }
+  var round2 = (n) => Math.round(n * 100) / 100;
+  function meanSd(values) {
+    if (values.length === 0) return { mean: 0, sd: 0 };
+    const mean = values.reduce((a, b) => a + b, 0) / values.length;
+    const sd = values.length > 1 ? Math.sqrt(values.reduce((a, b) => a + (b - mean) ** 2, 0) / (values.length - 1)) : 0;
+    return { mean: round2(mean), sd: round2(sd) };
+  }
+  function summarizeFeedback(list, academicYear) {
+    const rows = academicYear === null ? [...list] : list.filter((item) => item.academicYear === academicYear);
+    const items = FEEDBACK_ITEMS.map((item) => {
+      const values = rows.map((row) => row[item.key]);
+      const { mean, sd } = meanSd(values);
+      const counts = [5, 4, 3, 2, 1].map((s) => values.filter((v) => v === s).length);
+      return { key: item.key, label: item.label, mean, sd, level: interpretMean(mean), counts };
+    });
+    const all = meanSd(rows.flatMap((row) => FEEDBACK_ITEMS.map((item) => row[item.key])));
+    const comments = rows.filter((row) => row.comment).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).map((row) => ({ appNo: row.appNo, overall: row.overall, comment: row.comment, at: row.updatedAt }));
+    return { count: rows.length, items, mean: all.mean, sd: all.sd, level: interpretMean(all.mean), comments };
+  }
+  function parseFeedback(header, rows) {
+    const col = (row, name) => {
+      var _a;
+      const index = header.indexOf(name);
+      return index === -1 ? "" : String((_a = row[index]) != null ? _a : "");
+    };
+    return rows.map((row) => ({
+      applicantId: col(row, "applicantId"),
+      appNo: col(row, "appNo"),
+      academicYear: Number(col(row, "academicYear")) || 0,
+      level: col(row, "level"),
+      ease: score(col(row, "ease")),
+      speed: score(col(row, "speed")),
+      overall: score(col(row, "overall")),
+      comment: col(row, "comment"),
+      createdAt: col(row, "createdAt"),
+      updatedAt: col(row, "updatedAt")
+    })).filter((item) => item.applicantId !== "" && item.overall > 0);
+  }
+  var feedbackToRow = (item) => FEEDBACK_COLUMNS.map((column) => {
+    var _a;
+    return String((_a = item[column]) != null ? _a : "");
+  });
   return __toCommonJS(index_exports);
 })();

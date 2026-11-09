@@ -17,6 +17,7 @@ export const SHEET_SETTINGS = 'Settings';
 export const SHEET_STAFF = 'Staff';
 export const SHEET_AUDIT = 'Audit';
 export const SHEET_ANNOUNCEMENTS = 'Announcements';
+export const SHEET_FEEDBACK = 'Feedback';
 export const SHEET_BACKUP_FOLDER = 'สำรองข้อมูลอัตโนมัติ';
 
 export const APPLICANT_COLUMNS = [

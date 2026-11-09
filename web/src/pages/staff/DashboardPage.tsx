@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Star } from 'lucide-react';
 import { computeStats, schoolsByProgram, type Count } from '@shared/stats';
 import { QuotaTable } from '../PublicDashboard';
 import { THAI_MONTHS, parseIsoDate } from '@shared/thai';
@@ -35,9 +35,14 @@ export function DashboardPage() {
           <h1 className="text-2xl font-bold text-brand-deep">ภาพรวมการรับสมัคร ปีการศึกษา {year}</h1>
           <p className="text-sm text-ink-muted">อัปเดตเองทุก 10 วินาทีเมื่อมีผู้สมัครใหม่ · การรับสมัคร{settings?.applicationsOpen ? 'เปิดอยู่' : 'ปิดอยู่'}</p>
         </div>
+        <div className="flex flex-wrap gap-2">
         <Link to="/staff/applicants?status=submitted" className="inline-flex min-h-11 items-center rounded-control bg-brand px-4 font-medium text-ink-inverse hover:bg-brand-hover">
           ตรวจใบสมัครที่รออยู่ ({stats.waitingReview})
         </Link>
+        <Link to="/staff/feedback" className="inline-flex min-h-11 items-center gap-1.5 rounded-control px-4 font-medium text-brand ring-1 ring-inset ring-line-strong hover:bg-brand-soft">
+          <Star className="size-4" aria-hidden="true" />ผลประเมินความพึงพอใจ
+        </Link>
+        </div>
       </div>
 
       <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">

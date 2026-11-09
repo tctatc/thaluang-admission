@@ -139,7 +139,11 @@ function apiHandlers_() {
 
     lookup: function (payload) {
       const applicant = findOwnApplication_(payload);
-      return { applicant: Domain.publicView(applicant), photo: photoDataUrl_(applicant) };
+      return { applicant: Domain.publicView(applicant), photo: photoDataUrl_(applicant), feedback: ownFeedback_(applicant.id) };
+    },
+
+    submitFeedback: function (payload) {
+      return submitFeedback_(payload);
     },
 
     uploadDocument: function (payload) {
@@ -261,6 +265,11 @@ function apiHandlers_() {
       });
       audit_(staff.username, 'updateApplicant', applicant.appNo, '');
       return { applicant: applicant };
+    },
+
+    feedbackReport: function (payload, token) {
+      authenticate_(token);
+      return feedbackReport_(payload);
     },
 
     deleteApplicant: function (payload, token) {

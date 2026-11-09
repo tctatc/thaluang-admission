@@ -13,6 +13,7 @@
 
 import type { Announcement, Applicant, DocKind, DocState, ManualInfo, ManualKind, Program, Settings, Status } from '@shared/model';
 import type { StaffAccount, StaffAccountInput } from '@shared/users';
+import type { Feedback, FeedbackSummary } from '@shared/feedback';
 import type { PublicApplicant } from '@shared/service';
 import type { PublicStats } from '@shared/stats';
 import type { Issue } from '@shared/validate';
@@ -90,7 +91,9 @@ export const api = {
   home: () => transport.call<HomeData>('home'),
   publicStats: () => transport.call<PublicStats>('publicStats'),
   submit: (input: unknown) => transport.call<{ applicant: PublicApplicant }>('submitApplication', input),
-  lookup: (cred: Credentials) => transport.call<{ applicant: PublicApplicant; photo: string }>('lookup', cred),
+  lookup: (cred: Credentials) => transport.call<{ applicant: PublicApplicant; photo: string; feedback?: Feedback | null }>('lookup', cred),
+  submitFeedback: (cred: Credentials, answers: { ease: number; speed: number; overall: number; comment: string }) =>
+    transport.call<{ feedback: Feedback }>('submitFeedback', { ...cred, ...answers }),
   upload: (cred: Credentials, kind: DocKind, name: string, dataBase64: string) =>
     transport.call<{ applicant: PublicApplicant }>('uploadDocument', { ...cred, kind, name, dataBase64 }),
 
@@ -120,6 +123,8 @@ export const api = {
   deleteManual: (token: string, kind: ManualKind) => transport.call<{ manuals: Manuals }>('deleteManual', { kind }, token),
   deleteAnnouncement: (token: string, id: string) => transport.call<{ announcements: Announcement[] }>('deleteAnnouncement', { id }, token),
   savePrograms: (token: string, programs: Program[]) => transport.call<{ programs: Program[] }>('savePrograms', { programs }, token),
+  feedbackReport: (token: string, year: number | 'all') =>
+    transport.call<{ year: number | null; summary: FeedbackSummary; rows: Feedback[]; years: number[] }>('feedbackReport', { year }, token),
   deleteApplicant: (token: string, id: string, confirmAppNo: string) => transport.call<{ deleted: string }>('deleteApplicant', { id, confirmAppNo }, token),
   updateApplicant: (token: string, id: string, applicant: unknown) => transport.call<{ applicant: Applicant }>('updateApplicant', { id, applicant }, token),
 };

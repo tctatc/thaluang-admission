@@ -18,6 +18,7 @@ import { deleteAnnouncement, normalizePrograms, normalizeSettings, publicAnnounc
 import { MANUAL_KINDS, NO_POSTER, type Announcement, type ManualInfo, type ManualKind, type PosterImage, type Program, type StoredManual } from '@shared/model';
 import { checkManual, checkPoster, checkUpload } from '@shared/files';
 import { checkNewPassword } from '@shared/validate';
+import { summarizeFeedback, upsertFeedback, type Feedback } from '@shared/feedback';
 import { normalizeStaffInput, staffChangeProblem, validateStaffInput, type StaffAccount } from '@shared/users';
 import { computePublicStats } from '@shared/stats';
 import type { Manuals, Transport } from './api';
@@ -30,6 +31,8 @@ const KEY_VERSION = 'tla.demo.version.v1';
 const KEY_PROGRAMS = 'tla.demo.programs.v3';
 const KEY_ANNOUNCEMENTS = 'tla.demo.announcements.v1';
 const KEY_STAFF = 'tla.demo.staff.v1';
+const KEY_FEEDBACK = 'tla.demo.feedback.v1';
+const feedbacks = (): Feedback[] => load<Feedback[]>(KEY_FEEDBACK, []);
 
 /** บัญชีเจ้าหน้าที่ของโหมดสาธิต (หน้าเข้าสู่ระบบแสดงไว้ให้) */
 export const DEMO_STAFF = [
@@ -146,7 +149,24 @@ const handlers: Record<string, Handler> = {
   lookup: async (payload) => {
     const applicant = findByCredentials(repo(), payload.nationalId, payload.birthDate);
     if (!applicant) fail('NOT_FOUND', 'ไม่พบใบสมัคร ตรวจเลขบัตรประชาชนและวันเกิดให้ตรงกับที่กรอกตอนสมัคร');
-    return { applicant: publicView(applicant), photo: await photoOf(applicant) };
+    return { applicant: publicView(applicant), photo: await photoOf(applicant), feedback: feedbacks().find((item) => item.applicantId === applicant.id) ?? null };
+  },
+  submitFeedback: (payload) => {
+    const applicant = findByCredentials(repo(), payload.nationalId, payload.birthDate);
+    if (!applicant) fail('NOT_FOUND', 'ไม่พบใบสมัคร');
+    const result = upsertFeedback(feedbacks(), applicant, payload, new Date().toISOString());
+    save(KEY_FEEDBACK, result.list);
+    return { feedback: result.saved };
+  },
+  feedbackReport: (payload, token) => {
+    staffFromToken(token);
+    const list = feedbacks();
+    const year = payload.year === 'all' ? null : Number(payload.year) || settings().academicYear;
+    return {
+      year, summary: summarizeFeedback(list, year),
+      rows: year === null ? list : list.filter((item) => item.academicYear === year),
+      years: [...new Set(list.map((item) => item.academicYear))].sort(),
+    };
   },
   uploadDocument: async (payload) => {
     const kind = assertDocKind(payload.kind);

@@ -9,6 +9,8 @@ import { api, errorMessage, type Credentials } from '../lib/api';
 import { formatBytes, prepareFile } from '../lib/files';
 import { ApplicationSheet } from '../sheets/ApplicationSheet';
 import { ScaledSheet } from '../sheets/parts';
+import { FeedbackCard } from '../components/FeedbackCard';
+import type { Feedback } from '@shared/feedback';
 
 const STEPS: { label: string; done: (status: Status) => boolean }[] = [
   { label: 'ส่งใบสมัคร', done: () => true },
@@ -26,6 +28,7 @@ export function StatusPage() {
   const [justSubmitted] = useState(Boolean(incoming?.justSubmitted));
   const [applicant, setApplicant] = useState<PublicApplicant | null>(null);
   const [photo, setPhoto] = useState('');
+  const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -40,7 +43,7 @@ export function StatusPage() {
     setLoading(true);
     setError('');
     api.lookup(cred)
-      .then((result) => { setApplicant(result.applicant); setPhoto(result.photo); })
+      .then((result) => { setApplicant(result.applicant); setPhoto(result.photo); setFeedback(result.feedback ?? null); })
       .catch((cause) => { setError(errorMessage(cause)); setCred(null); })
       .finally(() => setLoading(false));
   }, [cred]);
@@ -92,6 +95,8 @@ export function StatusPage() {
               ))}
             </ul>
           </Panel>
+
+          <FeedbackCard key={applicant.id} cred={cred} initial={feedback} />
 
           <Button variant="ghost" onClick={signOut} icon={<LogOut className="size-4" aria-hidden="true" />}>ออกจากหน้านี้ (เครื่องใช้ร่วมกันควรกด)</Button>
         </div>
