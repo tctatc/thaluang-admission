@@ -79,6 +79,8 @@ export const apiMode = transport.mode;
 export interface SiteText { heroTitle: string; heroText: string; details: string }
 export interface PublicConfig { academicYear: number; applicationsOpen: boolean; programs: Program[]; siteText: SiteText }
 export interface HomeData { dataVersion: number; config: PublicConfig; announcements: Announcement[]; stats: PublicStats; manual?: ManualInfo | null }
+/** ข้อมูลทั้งหมดที่หน้าเจ้าหน้าที่ใช้ — ได้จาก login หรือ staffBootstrap */
+export interface StaffData { settings: Settings; programs: Program[]; applicants: Applicant[]; manuals?: Manuals; dataVersion: number }
 export interface Manuals { applicant: ManualInfo | null; staff: ManualInfo | null }
 /** ส่งพร้อมประกาศ: image = รูปใหม่ (base64 ที่ย่อแล้ว), removeImage = เอาโปสเตอร์ออก, ไม่ส่งทั้งคู่ = คงเดิม */
 export interface PosterUpload { dataBase64: string; width: number; height: number }
@@ -97,7 +99,8 @@ export const api = {
   upload: (cred: Credentials, kind: DocKind, name: string, dataBase64: string) =>
     transport.call<{ applicant: PublicApplicant }>('uploadDocument', { ...cred, kind, name, dataBase64 }),
 
-  login: (username: string, password: string) => transport.call<{ token: string; staff: StaffUser }>('login', { username, password }),
+  /** ล็อกอินสำเร็จได้ข้อมูลหน้าเจ้าหน้าที่มาพร้อมกัน (ระบบรุ่นเก่าที่ยังไม่อัปเดตจะไม่มี StaffData) */
+  login: (username: string, password: string) => transport.call<{ token: string; staff: StaffUser } & Partial<StaffData>>('login', { username, password }),
   changePassword: (token: string, currentPassword: string, newPassword: string) =>
     transport.call<{ token: string }>('changePassword', { currentPassword, newPassword }, token),
   listStaff: (token: string) => transport.call<{ users: StaffAccount[] }>('listStaff', {}, token),

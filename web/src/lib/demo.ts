@@ -190,7 +190,10 @@ const handlers: Record<string, Handler> = {
     if (!staff) fail('BAD_REQUEST', 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
     if (staff.status !== 'active') fail('FORBIDDEN', 'บัญชีนี้ถูกปิดการใช้งาน');
     updateDemoStaff(staff.username, { lastLoginAt: new Date().toISOString() });
-    return { token: `demo:${staff.username}:${staff.version}`, staff: { username: staff.username, displayName: staff.displayName, role: staff.role } };
+    return {
+      token: `demo:${staff.username}:${staff.version}`, staff: { username: staff.username, displayName: staff.displayName, role: staff.role },
+      settings: settings(), programs: programs(), applicants: repo().list(), manuals: manuals(), dataVersion: load(KEY_VERSION, 0),
+    };
   },
   changePassword: (payload, token) => {
     const staff = staffFromToken(token);

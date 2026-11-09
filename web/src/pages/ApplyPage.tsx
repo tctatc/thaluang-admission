@@ -198,8 +198,11 @@ export function ApplyPage() {
               <TextField label="ตำบล" {...bind('schoolSubdistrict')} />
               <TextField label="อำเภอ" {...bind('schoolDistrict')} />
               <SelectField label="จังหวัด" required options={PROVINCES} {...bind('schoolProvince')} />
+            </div>
+            {/* แถวแยก ให้ป้าย "ผลการเรียนเฉลี่ยสะสม *" อยู่บรรทัดเดียว ช่องสองข้างจึงสูงเท่ากัน */}
+            <div className="mt-4 grid gap-4 sm:grid-cols-[13rem_1fr]">
               <TextField label="ผลการเรียนเฉลี่ยสะสม" required inputMode="decimal" maxLength={4} placeholder="เช่น 3.25" {...bind('gpa')} />
-              <TextField label="สาขาวิชาเดิม" hint="ถ้าเรียนสายอาชีพอยู่" className="sm:col-span-3" {...bind('currentMajor')} />
+              <TextField label="สาขาวิชาเดิม" hint="ถ้าเรียนสายอาชีพอยู่" {...bind('currentMajor')} />
             </div>
           </Section>
 

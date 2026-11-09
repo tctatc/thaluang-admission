@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Applicant, Program, Settings } from '@shared/model';
-import { api, ApiError, type Manuals, type StaffUser } from '../lib/api';
+import { api, ApiError, type Manuals, type StaffData, type StaffUser } from '../lib/api';
 import { readStore, removeStore, writeStore } from '../lib/storage';
 
 /**
@@ -11,6 +11,22 @@ import { readStore, removeStore, writeStore } from '../lib/storage';
  */
 
 const TOKEN_KEY = 'tla.staff.token';
+/**
+ * ข้อมูลชุดล่าสุดของแท็บนี้ — เปิดหน้าใหม่ในแท็บเดิมแล้วขึ้นทันที แล้วค่อยดึงชุดใหม่เบื้องหลัง
+ * เก็บใน sessionStorage (หายเมื่อปิดแท็บ) และล้างทิ้งตอนออกจากระบบ เพราะมีข้อมูลส่วนตัวผู้สมัคร
+ */
+const SNAPSHOT_KEY = 'tla.staff.snapshot';
+
+type Snapshot = StaffData & { staff: StaffUser };
+
+function readSnapshot(): Snapshot | null {
+  try {
+    const value = JSON.parse(readStore('session', SNAPSHOT_KEY) ?? 'null') as Snapshot | null;
+    return value && value.staff && Array.isArray(value.applicants) ? value : null;
+  } catch {
+    return null;
+  }
+}
 const POLL_MS = 10_000;
 
 interface StaffState {
@@ -39,17 +55,37 @@ const StaffContext = createContext<StaffState | null>(null);
 
 export function StaffProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState(() => readStore('session', TOKEN_KEY) ?? '');
-  const [staff, setStaff] = useState<StaffUser | null>(null);
-  const [settings, setSettings] = useState<Settings | null>(null);
-  const [programs, setPrograms] = useState<Program[]>([]);
-  const [applicants, setApplicants] = useState<Applicant[]>([]);
-  const [manuals, setManuals] = useState<Manuals>({ applicant: null, staff: null });
-  const [loading, setLoading] = useState(Boolean(token));
+  const [snapshot] = useState(() => (token ? readSnapshot() : null));
+  const [staff, setStaff] = useState<StaffUser | null>(snapshot?.staff ?? null);
+  const [settings, setSettings] = useState<Settings | null>(snapshot?.settings ?? null);
+  const [programs, setPrograms] = useState<Program[]>(snapshot?.programs ?? []);
+  const [applicants, setApplicants] = useState<Applicant[]>(snapshot?.applicants ?? []);
+  const [manuals, setManuals] = useState<Manuals>(snapshot?.manuals ?? { applicant: null, staff: null });
+  // มีข้อมูลชุดเก่าของแท็บนี้ = แสดงเลย ไม่ต้องขึ้นหน้ากำลังโหลด
+  const [loading, setLoading] = useState(Boolean(token) && !snapshot);
   const [error, setError] = useState('');
-  const version = useRef(-1);
+  const version = useRef(snapshot?.dataVersion ?? -1);
+  /** login ส่งข้อมูลมาให้แล้ว ข้ามการโหลดซ้ำตอนเปลี่ยน token รอบนั้น */
+  const primed = useRef(false);
+
+  const apply = useCallback((data: StaffData & { staff?: StaffUser }) => {
+    if (data.staff) setStaff(data.staff);
+    setSettings(data.settings);
+    setPrograms(data.programs);
+    setApplicants(data.applicants);
+    if (data.manuals) setManuals(data.manuals);
+    version.current = data.dataVersion;
+  }, []);
+
+  // จำชุดล่าสุดไว้ทุกครั้งที่ข้อมูลเปลี่ยน
+  useEffect(() => {
+    if (!token || !staff || !settings) return;
+    writeStore('session', SNAPSHOT_KEY, JSON.stringify({ staff, settings, programs, applicants, manuals, dataVersion: version.current }));
+  }, [token, staff, settings, programs, applicants, manuals]);
 
   const logout = useCallback(() => {
     removeStore('session', TOKEN_KEY);
+    removeStore('session', SNAPSHOT_KEY);
     setToken('');
     setStaff(null);
     setApplicants([]);
@@ -63,22 +99,17 @@ export function StaffProvider({ children }: { children: ReactNode }) {
 
   const reload = useCallback(async () => {
     if (!token) return;
+    if (primed.current) { primed.current = false; return; }
     try {
-      // คำขอเดียว: ตรวจสิทธิ์และเปิดชีตครั้งเดียว (เดิมสองคำขอ ต่างคนต่างเปิดชีต)
-      const data = await api.staffBootstrap(token);
-      setStaff(data.staff);
-      setSettings(data.settings);
-      setPrograms(data.programs);
-      setApplicants(data.applicants);
-      if (data.manuals) setManuals(data.manuals);
-      version.current = data.dataVersion;
+      // คำขอเดียว: ตรวจสิทธิ์และอ่านข้อมูลทั้งหมดในรอบเดียว
+      apply(await api.staffBootstrap(token));
       setError('');
     } catch (cause) {
       handleError(cause);
     } finally {
       setLoading(false);
     }
-  }, [token, handleError]);
+  }, [token, handleError, apply]);
 
   useEffect(() => { void reload(); }, [reload]);
 
@@ -90,12 +121,7 @@ export function StaffProvider({ children }: { children: ReactNode }) {
         const { dataVersion } = await api.version();
         if (dataVersion !== version.current) {
           // สาขา/จำนวนรับอาจถูกผู้ดูแลอีกเครื่องแก้ ดึงมาพร้อมกันเลย
-          const data = await api.staffBootstrap(token);
-          setPrograms(data.programs);
-          setSettings(data.settings);
-          setApplicants(data.applicants);
-          if (data.manuals) setManuals(data.manuals);
-          version.current = data.dataVersion;
+          apply(await api.staffBootstrap(token));
         }
       } catch {
         // เน็ตสะดุดชั่วคราว รอรอบถัดไป ไม่ต้องรบกวนผู้ใช้
@@ -107,9 +133,16 @@ export function StaffProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (username: string, password: string) => {
     const result = await api.login(username, password);
     writeStore('session', TOKEN_KEY, result.token);
-    setLoading(true);
+    if (result.applicants && result.settings && result.programs && result.dataVersion !== undefined) {
+      // ได้ข้อมูลมากับการล็อกอินแล้ว เข้าหน้าได้ทันที
+      apply({ staff: result.staff, settings: result.settings, programs: result.programs, applicants: result.applicants, ...(result.manuals ? { manuals: result.manuals } : {}), dataVersion: result.dataVersion });
+      primed.current = true;
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
     setToken(result.token);
-  }, []);
+  }, [apply]);
 
   const changePassword = useCallback(async (currentPassword: string, newPassword: string) => {
     const result = await api.changePassword(token, currentPassword, newPassword);

@@ -81,6 +81,25 @@ function cachedByVersion_(name, compute) {
   return value;
 }
 
+/**
+ * ข้อมูลที่หน้าเจ้าหน้าที่ต้องใช้ทั้งหมด
+ * ค่าตั้งค่า สาขา และคู่มือเปลี่ยนไม่บ่อย จึงเก็บในแคชตามเลขเวอร์ชันข้อมูล (อ่านชีต Settings ครั้งเดียว)
+ * รายชื่อผู้สมัครอ่านสดทุกครั้ง เพราะเป็นข้อมูลส่วนตัวและใหญ่เกินเพดานแคช
+ */
+function staffData_() {
+  const config = cachedByVersion_('staffConfig', function () {
+    const settingsRows = readRows_(Domain.SHEET_SETTINGS).rows;
+    return { settings: Domain.parseSettings(settingsRows).settings, programs: readPrograms_(), manuals: readManuals_(settingsRows) };
+  });
+  return {
+    settings: config.settings,
+    programs: config.programs,
+    manuals: config.manuals,
+    applicants: sheetRepo_().list(),
+    dataVersion: getDataVersion_(),
+  };
+}
+
 function publicConfig_() {
   const settings = readSettings_();
   return {
@@ -163,8 +182,9 @@ function apiHandlers_() {
 
     /* ---------- เจ้าหน้าที่ ---------- */
 
+    /** ล็อกอินสำเร็จแล้วส่งข้อมูลหน้าเจ้าหน้าที่กลับไปพร้อมกัน ไม่ต้องรอคำขอรอบสอง */
     login: function (payload) {
-      return login_(payload);
+      return Object.assign(login_(payload), staffData_());
     },
 
     changePassword: function (payload, token) {
@@ -192,15 +212,7 @@ function apiHandlers_() {
 
     /** หน้าเจ้าหน้าที่เปิดครั้งแรก: ตรวจสิทธิ์ครั้งเดียว แล้วส่งทุกอย่างกลับในคำขอเดียว */
     staffBootstrap: function (payload, token) {
-      const staff = authenticate_(token);
-      return {
-        staff: staff,
-        settings: readSettings_(),
-        programs: readPrograms_(),
-        applicants: sheetRepo_().list(),
-        manuals: readManuals_(),
-        dataVersion: getDataVersion_(),
-      };
+      return Object.assign({ staff: authenticate_(token) }, staffData_());
     },
 
     me: function (payload, token) {

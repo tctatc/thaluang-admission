@@ -101,8 +101,9 @@ function manualInfo_(stored) {
   };
 }
 
-function readManuals_() {
-  const rows = readRows_(Domain.SHEET_SETTINGS).rows;
+/** settingsRows: ส่งแถวชีต Settings ที่อ่านไว้แล้วมาได้ ไม่ต้องเปิดชีตซ้ำ */
+function readManuals_(settingsRows) {
+  const rows = settingsRows || readRows_(Domain.SHEET_SETTINGS).rows;
   const get = function (kind) {
     const row = rows.find(function (r) { return String(r[0]).trim() === Domain.manualSettingKey(kind); });
     return manualInfo_(row ? Domain.parseManual(row[1]) : null);

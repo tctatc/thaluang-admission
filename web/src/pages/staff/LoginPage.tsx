@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, LogIn } from 'lucide-react';
 import { useStaff } from '../../app/staff';
@@ -12,6 +12,8 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  // ระหว่างพิมพ์รหัส โหลดโค้ดหน้าแรกของเจ้าหน้าที่ไว้ก่อน ล็อกอินเสร็จจะได้ไม่ต้องรอดาวน์โหลดเพิ่ม
+  useEffect(() => { void import('./DashboardPage'); void import('./ApplicantsPage'); }, []);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
