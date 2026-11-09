@@ -113,6 +113,7 @@ var Domain = (() => {
     programToRow: () => programToRow,
     publicAnnouncements: () => publicAnnouncements,
     publicView: () => publicView,
+    renumberPlan: () => renumberPlan,
     reviewDocument: () => reviewDocument,
     rowToApplicant: () => rowToApplicant,
     saveAnnouncement: () => saveAnnouncement,
@@ -564,6 +565,16 @@ var Domain = (() => {
     const next = max + 1;
     if (String(next).length > width) throw new Error(`\u0E40\u0E25\u0E02\u0E25\u0E33\u0E14\u0E31\u0E1A\u0E40\u0E15\u0E47\u0E21\u0E41\u0E25\u0E49\u0E27 (${width} \u0E2B\u0E25\u0E31\u0E01) \u2014 \u0E40\u0E1E\u0E34\u0E48\u0E21\u0E08\u0E33\u0E19\u0E27\u0E19 N \u0E43\u0E19\u0E23\u0E39\u0E1B\u0E41\u0E1A\u0E1A\u0E23\u0E2B\u0E31\u0E2A`);
     return `${before}${String(next).padStart(width, "0")}${after}`;
+  }
+  function renumberPlan(applicants, academicYear, removeAppNos) {
+    const prefix = `Q${String(academicYear).slice(-2)}-`;
+    const seq = (no) => Number(no.slice(prefix.length));
+    const year = applicants.filter((a) => a.academicYear === academicYear && a.appNo.startsWith(prefix));
+    const remove = year.filter((a) => removeAppNos.includes(a.appNo));
+    const missing = removeAppNos.filter((no) => !remove.some((a) => a.appNo === no));
+    const keep = year.filter((a) => !removeAppNos.includes(a.appNo)).sort((a, b) => seq(a.appNo) - seq(b.appNo));
+    const renames = keep.map((a, index) => ({ id: a.id, from: a.appNo, to: `${prefix}${String(index + 1).padStart(4, "0")}` })).filter((r) => r.from !== r.to);
+    return { remove, renames, missing };
   }
 
   // shared/files.ts

@@ -53,3 +53,22 @@ export function nextStudentId(
   if (String(next).length > width) throw new Error(`เลขลำดับเต็มแล้ว (${width} หลัก) — เพิ่มจำนวน N ในรูปแบบรหัส`);
   return `${before}${String(next).padStart(width, '0')}${after}`;
 }
+
+/**
+ * แผนลบใบสมัครแล้วเลื่อนเลขที่ที่เหลือลงมาให้ต่อเนื่อง (เฉพาะปีการศึกษาที่ระบุ)
+ * เรียงตามเลขเดิมจากน้อยไปมาก เลขใหม่จึงน้อยกว่าหรือเท่ากับเลขเดิมเสมอ เปลี่ยนทีละรายการได้โดยไม่ชนกัน
+ */
+export function renumberPlan<T extends { id: string; appNo: string; academicYear: number }>(
+  applicants: readonly T[], academicYear: number, removeAppNos: readonly string[],
+): { remove: T[]; renames: { id: string; from: string; to: string }[]; missing: string[] } {
+  const prefix = `Q${String(academicYear).slice(-2)}-`;
+  const seq = (no: string) => Number(no.slice(prefix.length));
+  const year = applicants.filter((a) => a.academicYear === academicYear && a.appNo.startsWith(prefix));
+  const remove = year.filter((a) => removeAppNos.includes(a.appNo));
+  const missing = removeAppNos.filter((no) => !remove.some((a) => a.appNo === no));
+  const keep = year.filter((a) => !removeAppNos.includes(a.appNo)).sort((a, b) => seq(a.appNo) - seq(b.appNo));
+  const renames = keep
+    .map((a, index) => ({ id: a.id, from: a.appNo, to: `${prefix}${String(index + 1).padStart(4, '0')}` }))
+    .filter((r) => r.from !== r.to);
+  return { remove, renames, missing };
+}

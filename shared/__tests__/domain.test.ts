@@ -358,3 +358,26 @@ describe('ชื่อสาขาต้องดูระดับด้วย'
     expect(programName(SAMPLE_PROGRAMS, '', 'pvs')).toBe('');
   });
 });
+
+describe('ลบใบสมัครทดสอบแล้วเลื่อนเลข', async () => {
+  const { renumberPlan, nextApplicationNo } = await import('../numbering');
+  const mk = (n: number, year = 2570) => ({ id: `id${n}`, appNo: `Q${String(year).slice(-2)}-${String(n).padStart(4, '0')}`, academicYear: year });
+  it('ลบ 0001–0003 แล้ว 0004 เป็น 0001 ตามลำดับ ไม่แตะปีอื่น', () => {
+    const list = [mk(5), mk(1), mk(4), mk(2), mk(3), mk(13), mk(1, 2569)];
+    const plan = renumberPlan(list, 2570, ['Q70-0001', 'Q70-0002', 'Q70-0003']);
+    expect(plan.remove.map((a) => a.appNo).sort()).toEqual(['Q70-0001', 'Q70-0002', 'Q70-0003']);
+    expect(plan.renames).toEqual([
+      { id: 'id4', from: 'Q70-0004', to: 'Q70-0001' },
+      { id: 'id5', from: 'Q70-0005', to: 'Q70-0002' },
+      { id: 'id13', from: 'Q70-0013', to: 'Q70-0003' },
+    ]);
+    expect(plan.missing).toEqual([]);
+    // เลขใหม่ไม่ชนเลขเดิมที่ยังไม่ได้เปลี่ยน เพราะเปลี่ยนจากน้อยไปมาก
+    plan.renames.forEach((r, i) => expect(plan.renames.slice(i + 1).some((later) => later.from === r.to)).toBe(false));
+    expect(nextApplicationNo(['Q70-0001', 'Q70-0002', 'Q70-0003'], 2570)).toBe('Q70-0004');
+  });
+  it('รันซ้ำหลังทำไปแล้ว: ไม่มีอะไรต้องลบหรือเปลี่ยน', () => {
+    const plan = renumberPlan([mk(1), mk(2)], 2570, ['Q70-0003']);
+    expect(plan).toMatchObject({ remove: [], renames: [], missing: ['Q70-0003'] });
+  });
+});

@@ -263,6 +263,10 @@ function apiHandlers_() {
       return { applicant: applicant };
     },
 
+    deleteApplicant: function (payload, token) {
+      return deleteApplicant_(requireAdmin_(token), payload);
+    },
+
     /* ---------- เฉพาะผู้ดูแล ---------- */
 
     saveSettings: function (payload, token) {

@@ -1,6 +1,7 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowDown, ArrowUp, ArrowUpDown, FileSpreadsheet, FileText, Search } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, FileSpreadsheet, FileText, Pencil, Search, Trash2 } from 'lucide-react';
+import { DeleteApplicantDialog } from './DeleteApplicantDialog';
 import {
   DOC_INFO, DOC_KINDS, LEVELS, LEVEL_LABEL, STATUSES, STATUS_LABEL, firstChoice, fullName,
   type Applicant, type Program, type Status,
@@ -24,7 +25,9 @@ const choiceOf = (a: Applicant, programs: readonly Program[]) => {
 };
 
 export function ApplicantsPage() {
-  const { applicants, programs, settings } = useStaff();
+  const { applicants, programs, settings, staff } = useStaff();
+  const [deleting, setDeleting] = useState<Applicant | null>(null);
+  const admin = staff?.role === 'admin';
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
   const year = params.get('year') ?? String(settings?.academicYear ?? '');
@@ -80,7 +83,7 @@ export function ApplicantsPage() {
     setParams(next, { replace: true });
   };
   const header = (key: SortKey, label: string) => (
-    <th className="px-4 py-3 font-medium" aria-sort={sort === key ? (dir === 1 ? 'ascending' : 'descending') : 'none'}>
+    <th className="whitespace-nowrap px-4 py-3 font-medium" aria-sort={sort === key ? (dir === 1 ? 'ascending' : 'descending') : 'none'}>
       <button type="button" onClick={() => sortBy(key)} className="inline-flex items-center gap-1 hover:text-ink">
         {label}
         {sort !== key ? <ArrowUpDown className="size-3.5 opacity-50" aria-hidden="true" /> : dir === 1 ? <ArrowUp className="size-3.5" aria-hidden="true" /> : <ArrowDown className="size-3.5" aria-hidden="true" />}
@@ -168,36 +171,50 @@ export function ApplicantsPage() {
       </ul>
 
       <div className="hidden overflow-x-auto rounded-card bg-surface shadow-card ring-1 ring-line md:block">
-        <table className="w-full min-w-[880px] text-left text-[15px]">
+        <table className="w-full min-w-[980px] text-left text-[15px]">
           <thead className="border-b border-line bg-sunken text-sm text-ink-muted">
             <tr>
               {header('appNo', 'เลขที่')}
               {header('name', 'ชื่อ-นามสกุล')}
               {header('program', 'ระดับ / สาขาอันดับ 1')}
               {header('school', 'โรงเรียนเดิม')}
-              <th className="px-4 py-3 font-medium">เอกสาร</th>
+              <th className="whitespace-nowrap px-4 py-3 font-medium">เอกสาร</th>
               {header('status', 'สถานะ')}
               {header('createdAt', 'สมัครเมื่อ')}
+              <th className="px-2 py-3"><span className="sr-only">จัดการ</span></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
             {filtered.map((a) => (
               <tr key={a.id} onClick={() => navigate(`/staff/applicants/${a.id}`)} className="cursor-pointer transition-colors hover:bg-brand-soft/60">
-                <td className="px-4 py-3 font-medium" data-numeric>
+                <td className="whitespace-nowrap px-4 py-3 font-medium" data-numeric>
                   <Link to={`/staff/applicants/${a.id}`} onClick={(e) => e.stopPropagation()} className="text-brand hover:underline">{a.appNo}</Link>
                 </td>
                 <td className="px-4 py-3">{fullName(a)}</td>
                 <td className="px-4 py-3">{a.level === 'pvc' ? 'ปวช.' : 'ปวส.'} {choiceOf(a, programs)?.name}</td>
                 <td className="max-w-56 truncate px-4 py-3" title={a.schoolName}>{a.schoolName}</td>
-                <td className="px-4 py-3"><DocSummary applicant={a} /></td>
+                <td className="whitespace-nowrap px-4 py-3"><DocSummary applicant={a} /></td>
                 <td className="px-4 py-3"><StatusBadge status={a.status as Status} /></td>
                 <td className="whitespace-nowrap px-4 py-3 text-ink-muted" data-numeric>{shortDate(a.createdAt)}</td>
+                <td className="whitespace-nowrap px-2 py-1.5 text-right" onClick={(e) => e.stopPropagation()}>
+                  <Link to={`/staff/applicants/${a.id}?edit=1`} aria-label={`แก้ไข ${a.appNo}`} title="แก้ไขข้อมูล"
+                    className="inline-grid size-10 place-items-center rounded-control text-ink-muted hover:bg-brand-soft hover:text-brand">
+                    <Pencil className="size-4" aria-hidden="true" />
+                  </Link>
+                  {admin && (
+                    <button type="button" onClick={() => setDeleting(a)} aria-label={`ลบ ${a.appNo}`} title="ลบใบสมัคร"
+                      className="inline-grid size-10 place-items-center rounded-control text-ink-muted hover:bg-danger-soft hover:text-danger">
+                      <Trash2 className="size-4" aria-hidden="true" />
+                    </button>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
         {filtered.length === 0 && <p className="px-4 py-12 text-center text-ink-muted">{applicants.length ? 'ไม่มีผู้สมัครที่ตรงกับตัวกรอง' : 'ยังไม่มีผู้สมัคร'}</p>}
       </div>
+      {deleting && <DeleteApplicantDialog applicant={deleting} onClose={() => setDeleting(null)} onDeleted={() => setDeleting(null)} />}
     </div>
   );
 }

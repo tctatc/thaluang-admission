@@ -322,6 +322,16 @@ const handlers: Record<string, Handler> = {
     bump();
     return { applicant };
   },
+  deleteApplicant: async (payload, token) => {
+    requireAdmin(token);
+    const applicant = repo().list().find((item) => item.id === payload.id);
+    if (!applicant) fail('NOT_FOUND', 'ไม่พบใบสมัครนี้ อาจถูกลบไปแล้ว');
+    if (String(payload.confirmAppNo ?? '').trim().toUpperCase() !== applicant.appNo) fail('VALIDATION', `พิมพ์เลขที่ใบสมัคร ${applicant.appNo} ให้ตรงเพื่อยืนยันการลบ`);
+    save(KEY_APPLICANTS, repo().list().filter((item) => item.id !== applicant.id));
+    await Promise.all(Object.values(applicant.documents).map((doc) => (doc?.fileId ? fileStore.remove(doc.fileId) : undefined)));
+    bump();
+    return { deleted: applicant.id };
+  },
   seedDemo: (_payload, token) => {
     staffFromToken(token);
     const added = seed();

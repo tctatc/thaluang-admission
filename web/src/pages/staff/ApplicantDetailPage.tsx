@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, Check, Eye, IdCard, Pencil, Printer, X } from 'lucide-react';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { ArrowLeft, Check, Eye, IdCard, Pencil, Printer, Trash2, X } from 'lucide-react';
 import {
   DOC_INFO, DOC_KINDS, DOC_STATE_LABEL, ENROLLMENT_FIELDS, LEVEL_LABEL, STATUSES, STATUS_LABEL, firstChoice, fullName, programName, trackOf,
   type Applicant, type DocKind, type Enrollment, type Level, type Status,
@@ -14,14 +14,19 @@ import { ApplicationSheet } from '../../sheets/ApplicationSheet';
 import { EnrollmentSheet } from '../../sheets/EnrollmentSheet';
 import { ScaledSheet } from '../../sheets/parts';
 import { EditApplicantPanel } from './EditApplicantPanel';
+import { DeleteApplicantDialog } from './DeleteApplicantDialog';
 
 export function ApplicantDetailPage() {
   const { id } = useParams();
-  const { applicants, programs, token, replace } = useStaff();
+  const { applicants, programs, token, replace, staff } = useStaff();
   const applicant = applicants.find((item) => item.id === id);
   const [photo, setPhoto] = useState('');
   const [sheet, setSheet] = useState<'application' | 'enrollment'>('application');
-  const [editing, setEditing] = useState(false);
+  // ?edit=1 มาจากปุ่ม "แก้ไข" ในรายชื่อ เปิดฟอร์มแก้ไขให้เลย
+  const [searchParams] = useSearchParams();
+  const [editing, setEditing] = useState(searchParams.get('edit') === '1');
+  const [deleting, setDeleting] = useState(false);
+  const navigate = useNavigate();
   const photoId = applicant?.documents.photo?.fileId;
 
   useEffect(() => {
@@ -48,7 +53,12 @@ export function ApplicantDetailPage() {
           <StatusBadge status={applicant.status} />
           <span className="text-ink-muted" data-numeric>{applicant.appNo}</span>
           {applicant.studentId && <span className="rounded-full bg-gold-soft px-3 py-0.5 font-semibold text-gold-ink" data-numeric>รหัส {applicant.studentId}</span>}
+          <div className="ml-auto flex gap-1">
+            {!editing && <Button variant="secondary" onClick={() => setEditing(true)} icon={<Pencil className="size-4" aria-hidden="true" />}>แก้ไข</Button>}
+            {staff?.role === 'admin' && <Button variant="ghost" className="text-danger hover:bg-danger-soft" onClick={() => setDeleting(true)} icon={<Trash2 className="size-4" aria-hidden="true" />}>ลบ</Button>}
+          </div>
         </div>
+        {deleting && <DeleteApplicantDialog applicant={applicant} onClose={() => setDeleting(false)} onDeleted={() => navigate('/staff/applicants', { replace: true })} />}
       </div>
 
       <div className="grid grid-cols-[minmax(0,1fr)] gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">

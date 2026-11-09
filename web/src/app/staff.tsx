@@ -30,6 +30,8 @@ interface StaffState {
   reload(): Promise<void>;
   /** ใส่ใบสมัครที่เพิ่งแก้ลงรายการทันที ไม่ต้องรอรอบดึงข้อมูลถัดไป */
   replace(applicant: Applicant): void;
+  /** เอาใบสมัครที่เพิ่งลบออกจากรายการทันที */
+  removeApplicant(id: string): void;
   setSettings(settings: Settings): void;
 }
 
@@ -115,12 +117,16 @@ export function StaffProvider({ children }: { children: ReactNode }) {
     setToken(result.token);
   }, [token]);
 
+  const removeApplicant = useCallback((id: string) => {
+    setApplicants((list) => list.filter((item) => item.id !== id));
+  }, []);
+
   const replace = useCallback((applicant: Applicant) => {
     setApplicants((list) => list.map((item) => (item.id === applicant.id ? applicant : item)));
   }, []);
 
   return (
-    <StaffContext.Provider value={{ token, staff, settings, programs, applicants, manuals, setManuals, loading, error, login, logout, changePassword, reload, replace, setSettings }}>
+    <StaffContext.Provider value={{ token, staff, settings, programs, applicants, manuals, setManuals, loading, error, login, logout, changePassword, reload, replace, removeApplicant, setSettings }}>
       {children}
     </StaffContext.Provider>
   );

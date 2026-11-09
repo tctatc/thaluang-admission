@@ -120,6 +120,7 @@ export const api = {
   deleteManual: (token: string, kind: ManualKind) => transport.call<{ manuals: Manuals }>('deleteManual', { kind }, token),
   deleteAnnouncement: (token: string, id: string) => transport.call<{ announcements: Announcement[] }>('deleteAnnouncement', { id }, token),
   savePrograms: (token: string, programs: Program[]) => transport.call<{ programs: Program[] }>('savePrograms', { programs }, token),
+  deleteApplicant: (token: string, id: string, confirmAppNo: string) => transport.call<{ deleted: string }>('deleteApplicant', { id, confirmAppNo }, token),
   updateApplicant: (token: string, id: string, applicant: unknown) => transport.call<{ applicant: Applicant }>('updateApplicant', { id, applicant }, token),
 };
 
