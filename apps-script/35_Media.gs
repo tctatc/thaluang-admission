@@ -52,11 +52,13 @@ function saveAnnouncementWithPoster_(staff, payload) {
   // อัปโหลดนอกล็อก (Drive ช้า) แล้วค่อยเขียนชีตในล็อก ถ้าเขียนไม่สำเร็จให้ทิ้งไฟล์ใหม่
   const image = posterFromPayload_(payload);
   let oldFileId = '';
+  let before;
   let list;
   try {
     list = withScriptLock_(function () {
       const current = readAnnouncements_();
       const existing = current.find(function (item) { return item.id === payload.id; });
+      before = existing;
       oldFileId = existing ? existing.imageFileId : '';
       const next = Domain.saveAnnouncement(current, payload, { nowIso: nowIso_(), newId: newId_ }, image);
       writeAnnouncements_(next);
@@ -69,7 +71,10 @@ function saveAnnouncementWithPoster_(staff, payload) {
   }
   if (image !== undefined && oldFileId && oldFileId !== image.fileId) trashFile_(oldFileId);
   audit_(staff.username, 'saveAnnouncement', String(payload.title || ''), image === undefined ? '' : image.fileId ? 'poster' : 'remove poster');
-  return { announcements: list };
+  // ประกาศใหม่อยู่บนสุดของรายการ ประกาศที่แก้หาจาก id เดิม
+  const saved = before ? list.find(function (item) { return item.id === before.id; }) : list[0];
+  if (saved && Domain.isNewlyPublished(before, saved)) pushLine_(Domain.announcementLineText(saved, getProp_(PROP_PUBLIC_SITE_URL)));
+  return { announcements: list, lineConfigured: Boolean(getProp_(PROP_LINE_TOKEN) && getProp_(PROP_LINE_TO)) };
 }
 
 function deleteAnnouncementWithPoster_(staff, payload) {

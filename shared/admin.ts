@@ -128,3 +128,15 @@ export function normalizeSettings(raw: unknown): Settings {
   if (issues.length) fail('VALIDATION', issues[0]!.message, issues);
   return settings;
 }
+
+/** ประกาศเพิ่งขึ้นเว็บครั้งแรก (ใหม่และเผยแพร่ หรือจากฉบับร่างเป็นเผยแพร่) — แก้ประกาศที่เผยแพร่อยู่แล้วไม่นับ กันแจ้งเตือนซ้ำ */
+export function isNewlyPublished(before: Announcement | undefined, after: Announcement): boolean {
+  return after.published && (!before || !before.published);
+}
+
+/** ข้อความแจ้งเตือน LINE ของประกาศ — เนื้อหายาวตัดให้สั้น แล้วให้กดลิงก์ไปอ่านต่อ/ดูโปสเตอร์ */
+export function announcementLineText(item: Announcement, siteUrl: string): string {
+  const body = item.body.length > 300 ? `${item.body.slice(0, 300).trimEnd()}…` : item.body;
+  const link = siteUrl ? `\n\n${item.imageUrl ? 'ดูโปสเตอร์และอ่านต่อ' : 'อ่านต่อ'}: ${siteUrl.replace(/\/?$/, '/')}#/news` : '';
+  return `ประกาศใหม่: ${item.title}\n\n${body}${link}`;
+}

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Navigate } from 'react-router-dom';
-import { ImagePlus, Pencil, Pin, Plus, Trash2, X } from 'lucide-react';
+import { ImagePlus, MessageCircle, Pencil, Pin, Plus, Trash2, X } from 'lucide-react';
 import type { Announcement } from '@shared/model';
 import { bangkokDateParts, thaiLongDate } from '@shared/thai';
 import { useStaff } from '../../app/staff';
@@ -25,7 +25,13 @@ export function AnnouncementsPage() {
   const [posterBusy, setPosterBusy] = useState(false);
   const [deleting, setDeleting] = useState<Announcement | null>(null);
 
-  useEffect(() => { api.adminAnnouncements(token).then((r) => setList(r.announcements)).catch((e) => setError(errorMessage(e))); }, [token]);
+  /** null = ยังไม่รู้ (กำลังโหลด) */
+  const [lineReady, setLineReady] = useState<boolean | null>(null);
+  useEffect(() => {
+    api.adminAnnouncements(token)
+      .then((r) => { setList(r.announcements); setLineReady(Boolean(r.lineConfigured)); })
+      .catch((e) => setError(errorMessage(e)));
+  }, [token]);
   if (staff?.role !== 'admin') return <Navigate to="/staff" replace />;
 
   const open = (item: Partial<Announcement>) => { setEditing({ ...item }); setErrors({}); setError(''); setPicked(null); setRemoved(false); };
@@ -79,6 +85,12 @@ export function AnnouncementsPage() {
         <div>
           <h1 className="text-2xl font-bold text-brand-deep">ประกาศประชาสัมพันธ์</h1>
           <p className="text-sm text-ink-muted">ประกาศที่เผยแพร่จะขึ้นหน้าแรกทันที ปักหมุดไว้บนสุดได้</p>
+          {lineReady === true && (
+            <p className="mt-1 inline-flex items-center gap-1.5 text-sm text-ok"><MessageCircle className="size-4" aria-hidden="true" />ประกาศที่เผยแพร่ครั้งแรกจะเด้งเข้ากลุ่ม LINE อัตโนมัติ (แก้ไขประกาศเดิมไม่ส่งซ้ำ)</p>
+          )}
+          {lineReady === false && (
+            <p className="mt-1 inline-flex items-center gap-1.5 text-sm text-warn"><MessageCircle className="size-4" aria-hidden="true" />ยังไม่ได้เชื่อม LINE ประกาศใหม่จึงยังไม่เด้งเข้ากลุ่ม (ตั้งค่า LINE_CHANNEL_TOKEN และ LINE_TO ใน Script Properties)</p>
+          )}
         </div>
         {!editing && <Button onClick={() => open(blank)} icon={<Plus className="size-4" aria-hidden="true" />}>เพิ่มประกาศ</Button>}
       </div>

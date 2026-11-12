@@ -318,7 +318,8 @@ function apiHandlers_() {
 
     adminAnnouncements: function (payload, token) {
       authenticate_(token);
-      return { announcements: readAnnouncements_() };
+      // หน้าเว็บบอกได้ว่าประกาศใหม่จะเด้งเข้า LINE หรือยังต้องตั้งค่า
+      return { announcements: readAnnouncements_(), lineConfigured: Boolean(getProp_(PROP_LINE_TOKEN) && getProp_(PROP_LINE_TO)) };
     },
 
     saveAnnouncement: function (payload, token) {

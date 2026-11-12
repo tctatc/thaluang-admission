@@ -69,6 +69,7 @@ var Domain = (() => {
     THAI_MONTHS: () => THAI_MONTHS,
     TRACK_LABEL: () => TRACK_LABEL,
     ageOn: () => ageOn,
+    announcementLineText: () => announcementLineText,
     announcementToRow: () => announcementToRow,
     applicantToRow: () => applicantToRow,
     assertCanAttach: () => assertCanAttach,
@@ -98,6 +99,7 @@ var Domain = (() => {
     fullName: () => fullName,
     getApplicant: () => getApplicant,
     interpretMean: () => interpretMean,
+    isNewlyPublished: () => isNewlyPublished,
     isValidPhone: () => isValidPhone,
     isValidThaiId: () => isValidThaiId,
     isoFromParts: () => isoFromParts,
@@ -1284,6 +1286,18 @@ var Domain = (() => {
     }
     if (issues.length) fail("VALIDATION", issues[0].message, issues);
     return settings;
+  }
+  function isNewlyPublished(before, after) {
+    return after.published && (!before || !before.published);
+  }
+  function announcementLineText(item, siteUrl) {
+    const body = item.body.length > 300 ? `${item.body.slice(0, 300).trimEnd()}\u2026` : item.body;
+    const link = siteUrl ? `
+
+${item.imageUrl ? "\u0E14\u0E39\u0E42\u0E1B\u0E2A\u0E40\u0E15\u0E2D\u0E23\u0E4C\u0E41\u0E25\u0E30\u0E2D\u0E48\u0E32\u0E19\u0E15\u0E48\u0E2D" : "\u0E2D\u0E48\u0E32\u0E19\u0E15\u0E48\u0E2D"}: ${siteUrl.replace(/\/?$/, "/")}#/news` : "";
+    return `\u0E1B\u0E23\u0E30\u0E01\u0E32\u0E28\u0E43\u0E2B\u0E21\u0E48: ${item.title}
+
+${body}${link}`;
   }
 
   // shared/users.ts

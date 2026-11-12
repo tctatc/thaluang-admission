@@ -407,3 +407,23 @@ describe('แบบประเมินความพึงพอใจ', asyn
     expect(fb.summarizeFeedback(list, null).count).toBe(5);
   });
 });
+
+describe('แจ้งเตือน LINE เมื่อมีประกาศใหม่', async () => {
+  const admin = await import('../admin');
+  const c = { nowIso: '2026-11-12T00:00:00.000Z', newId: () => 'n1' };
+  it('ส่งเฉพาะตอนขึ้นเว็บครั้งแรก แก้ประกาศเดิมไม่ส่งซ้ำ', () => {
+    const draft = admin.saveAnnouncement([], { title: 'ร่าง', body: 'x', published: false }, c)[0]!;
+    expect(admin.isNewlyPublished(undefined, draft)).toBe(false);
+    const live = { ...draft, published: true };
+    expect(admin.isNewlyPublished(draft, live)).toBe(true);
+    expect(admin.isNewlyPublished(undefined, live)).toBe(true);
+    expect(admin.isNewlyPublished(live, { ...live, title: 'แก้คำผิด' })).toBe(false);
+  });
+  it('ข้อความมีหัวข้อ เนื้อหาแบบย่อ และลิงก์หน้าประกาศ', () => {
+    const item = admin.saveAnnouncement([], { title: 'รับสมัครรอบโควตา', body: 'ก'.repeat(400) }, c)[0]!;
+    const text = admin.announcementLineText(item, 'https://tctatc.github.io/thaluang-admission');
+    expect(text.startsWith('ประกาศใหม่: รับสมัครรอบโควตา')).toBe(true);
+    expect(text).toContain('…');
+    expect(text.endsWith('https://tctatc.github.io/thaluang-admission/#/news')).toBe(true);
+  });
+});

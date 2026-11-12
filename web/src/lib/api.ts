@@ -119,7 +119,7 @@ export const api = {
   saveSettings: (token: string, settings: Settings) => transport.call<{ settings: Settings }>('saveSettings', settings, token),
   seedDemo: (token: string) => transport.call<{ added: number }>('seedDemo', {}, token),
   announcements: () => transport.call<{ announcements: Announcement[] }>('announcements'),
-  adminAnnouncements: (token: string) => transport.call<{ announcements: Announcement[] }>('adminAnnouncements', {}, token),
+  adminAnnouncements: (token: string) => transport.call<{ announcements: Announcement[]; lineConfigured?: boolean }>('adminAnnouncements', {}, token),
   saveAnnouncement: (token: string, item: Partial<Announcement> & { image?: PosterUpload; removeImage?: boolean }) =>
     transport.call<{ announcements: Announcement[] }>('saveAnnouncement', item, token),
   uploadManual: (token: string, kind: ManualKind, name: string, dataBase64: string) => transport.call<{ manuals: Manuals }>('uploadManual', { kind, name, dataBase64 }, token),

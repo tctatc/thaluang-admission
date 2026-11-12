@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ExternalLink, Maximize2, X } from 'lucide-react';
+import { ExternalLink, Maximize2, RefreshCw, X } from 'lucide-react';
 import { useFileUrl } from '../lib/media';
 import { cn } from './ui';
 
@@ -8,22 +8,32 @@ import { cn } from './ui';
  * ใช้ขนาดจริงที่บันทึกไว้จองพื้นที่ล่วงหน้า หน้าไม่กระโดดตอนรูปโหลดเสร็จ
  */
 export function Poster({ url, width, height, title, maxHeight = '28rem', className }: { url: string; width: number; height: number; title: string; maxHeight?: string; className?: string }) {
-  const src = useFileUrl(url);
+  const primary = useFileUrl(url);
   const [open, setOpen] = useState(false);
+  // Drive บางครั้งตอบรูปย่อไม่ทัน: ลองลิงก์สำรอง (lh3) อีกทาง ถ้ายังไม่ได้ ให้แตะลองใหม่แทนกล่องว่าง
+  const [attempt, setAttempt] = useState(0);
+  const fallback = driveFallback(primary);
+  const src = attempt === 0 ? primary : attempt === 1 && fallback ? fallback : '';
+  const failed = Boolean(primary) && !src;
   const ratio = width && height ? `${width} / ${height}` : '3 / 4';
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} aria-label={`ดูโปสเตอร์ ${title} ขนาดใหญ่`}
+      <button type="button" onClick={() => (failed ? setAttempt(0) : setOpen(true))} aria-label={`ดูโปสเตอร์ ${title} ขนาดใหญ่`}
         className={cn('group relative block w-full overflow-hidden rounded-control bg-sunken ring-1 ring-line', className)}>
-        {src
-          ? <img src={src} alt={`โปสเตอร์ ${title}`} width={width || undefined} height={height || undefined} loading="lazy" decoding="async"
+        {failed
+          ? <span className="flex w-full flex-col items-center justify-center gap-1 p-3 text-center text-sm text-ink-muted" style={{ aspectRatio: ratio, maxHeight }}
+              onClick={(event) => { event.stopPropagation(); setAttempt(0); }}>
+              <RefreshCw className="size-5" aria-hidden="true" />โหลดรูปไม่สำเร็จ แตะเพื่อลองใหม่
+            </span>
+          : src
+          ? <img key={src} src={src} onError={() => setAttempt((n) => n + 1)} alt={`โปสเตอร์ ${title}`} width={width || undefined} height={height || undefined} loading="lazy" decoding="async"
             className="mx-auto block h-auto w-full object-contain transition-transform duration-300 group-hover:scale-[1.02]" style={{ maxHeight }} />
           : <span className="block w-full" style={{ aspectRatio: ratio, maxHeight }} />}
         <span aria-hidden="true" className="absolute bottom-2 right-2 inline-flex items-center gap-1.5 rounded-full bg-ink/75 px-3 py-1.5 text-sm font-medium text-ink-inverse">
           <Maximize2 className="size-4" />ดูภาพใหญ่
         </span>
       </button>
-      {open && src && <Lightbox src={src} url={url} title={title} onClose={() => setOpen(false)} />}
+      {open && src && !failed && <Lightbox src={src} url={url} title={title} onClose={() => setOpen(false)} />}
     </>
   );
 }
@@ -57,4 +67,10 @@ function Lightbox({ src, url, title, onClose }: { src: string; url: string; titl
       </div>
     </dialog>
   );
+}
+
+/** ลิงก์รูปย่อของ Drive → ลิงก์ lh3 ของไฟล์เดียวกัน (อีกเซิร์ฟเวอร์หนึ่งของ Google) */
+function driveFallback(url: string): string {
+  const id = /drive\.google\.com\/thumbnail\?id=([\w-]+)/.exec(url)?.[1];
+  return id ? `https://lh3.googleusercontent.com/d/${id}=w2000` : '';
 }

@@ -7,6 +7,8 @@ import { useHome } from '../lib/publicData';
 import { CountUp, useAnimatedNumber } from '../lib/useAnimatedNumber';
 
 const COLOR = { brand: 'var(--color-brand)', gold: 'var(--color-gold)', deep: 'var(--color-brand-deep)' };
+/** สีแท่งอันดับ 1–5: ทอง แดง แดงเข้ม แล้วอ่อนลงสำหรับอันดับรอง */
+const RANK_COLOR = [COLOR.gold, COLOR.brand, COLOR.deep, 'color-mix(in oklab, var(--color-brand) 55%, white)', 'color-mix(in oklab, var(--color-brand-deep) 50%, white)'];
 type Filter = 'all' | 'pvc' | 'pvs';
 const TRACK_SHORT = { pvc: 'ปวช.', pvs: 'ปวส.' } as const;
 
@@ -61,7 +63,7 @@ export function PublicDashboard() {
         ) : (
           <>
             <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
-              <Card title="สาขายอดนิยม" subtitle="3 อันดับที่มีผู้เลือกมากที่สุด"><Podium programs={summary.programs} /></Card>
+              <Card title="สาขายอดนิยม" subtitle="5 อันดับที่มีผู้เลือกมากที่สุด"><Podium programs={summary.programs} /></Card>
               <Card title="สัดส่วนระดับที่สมัคร" subtitle="ชี้ที่วงเพื่อดูตัวเลข"><LevelDonut summary={summary} /></Card>
             </div>
             <Card
@@ -128,18 +130,18 @@ function SummaryCard({ icon, label, value, unit, tone }: { icon: ReactNode; labe
   );
 }
 
-/** แท่น 3 อันดับ วางแบบโพเดียม (2 · 1 · 3) แท่งเป็น 3 มิติแบบหน้าแดชบอร์ดระบบจองห้อง */
+/** แท่น 5 อันดับ วางแบบโพเดียม (4 · 2 · 1 · 3 · 5) อันดับ 1 อยู่กลาง แท่งเป็น 3 มิติแบบหน้าแดชบอร์ดระบบจองห้อง */
 function Podium({ programs }: { programs: ProgramCount[] }) {
-  const top = programs.filter((p) => p.value > 0).slice(0, 3);
+  const top = programs.filter((p) => p.value > 0).slice(0, 5);
   const max = top[0]?.value ?? 1;
-  const order = [top[1], top[0], top[2]].filter((p): p is ProgramCount => Boolean(p));
+  const order = [top[3], top[1], top[0], top[2], top[4]].filter((p): p is ProgramCount => Boolean(p));
   return (
-    <div className="group/bars flex h-72 items-end justify-center gap-4 px-2 sm:gap-8">
+    <div className="group/bars flex h-72 items-end justify-center gap-1.5 sm:gap-5">
       {order.map((program) => {
         const rank = top.indexOf(program) + 1;
         return (
           <Bar3D key={`${program.track}${program.code}`} rank={rank} label={program.name} track={TRACK_SHORT[program.track]} value={program.value}
-            percent={Math.max(18, (program.value / max) * 100)} color={rank === 1 ? COLOR.gold : rank === 2 ? COLOR.brand : COLOR.deep} delay={rank === 1 ? 240 : rank === 2 ? 120 : 0} />
+            percent={Math.max(18, (program.value / max) * 100)} color={RANK_COLOR[rank - 1]!} delay={(5 - rank) * 60} />
         );
       })}
     </div>
@@ -151,23 +153,24 @@ const DEPTH = 12;
 function Bar3D({ rank, label, track, value, percent, color, delay }: { rank: number; label: string; track: string; value: number; percent: number; color: string; delay: number }) {
   const grow = useAnimatedNumber(1, { duration: 900, delay });
   return (
-    <div className="group/bar flex h-full w-24 min-w-0 flex-col items-center justify-end gap-2 transition-opacity duration-200 group-hover/bars:opacity-55 hover:opacity-100! sm:w-32"
+    <div className="group/bar flex h-full min-w-0 max-w-28 flex-1 flex-col items-center justify-end gap-2 transition-opacity duration-200 group-hover/bars:opacity-55 hover:opacity-100!"
       title={`อันดับ ${rank} ${track} ${label}: ${value} คน`}>
       {rank === 1 && <Crown className="size-6 text-gold-ink transition-transform duration-200 group-hover/bar:-translate-y-2 group-hover/bar:rotate-12" aria-hidden="true" />}
-      <span data-numeric className="text-lg font-semibold text-ink transition-transform duration-200 ease-out group-hover/bar:-translate-y-2 group-hover/bar:scale-125">
+      <span data-numeric className="whitespace-nowrap text-base font-semibold text-ink transition-transform sm:text-lg duration-200 ease-out group-hover/bar:-translate-y-2 group-hover/bar:scale-125">
         <CountUp value={value} delay={delay} /> <span className="text-sm font-normal text-ink-muted">คน</span>
       </span>
-      <div className="relative w-full max-w-20 transition-transform duration-200 ease-out group-hover/bar:-translate-y-2" style={{ height: `${percent * 0.7}%`, marginRight: DEPTH }}>
+      {/* shrink-0 + สัดส่วน 0.58: เหลือที่ให้มงกุฎ ตัวเลข และชื่อสาขา แท่งเท่ากันจึงสูงเท่ากันจริง ไม่โดนมงกุฎเบียด */}
+      <div className="relative w-full max-w-20 shrink-0 transition-transform duration-200 ease-out group-hover/bar:-translate-y-2" style={{ height: `${percent * 0.58}%`, marginRight: DEPTH }}>
         <span aria-hidden="true" className="absolute -bottom-2 left-1 right-[-8px] h-2.5 rounded-full bg-ink/15 blur-[3px] transition-opacity duration-200 group-hover/bar:opacity-50" />
         <div className="absolute inset-0 origin-bottom" style={{ transform: `scaleY(${grow})` }}>
           <div className="absolute inset-0" style={{ background: `linear-gradient(90deg, ${color}, color-mix(in oklab, ${color} 78%, black))` }} />
           <div className="absolute bottom-full left-0 w-full origin-bottom-left" style={{ height: DEPTH, transform: 'skewX(-45deg)', background: `color-mix(in oklab, ${color} 62%, white)` }} />
           <div className="absolute left-full top-0 h-full origin-top-left" style={{ width: DEPTH, transform: 'skewY(-45deg)', background: `color-mix(in oklab, ${color} 55%, black)` }} />
           <div className="absolute inset-y-0 left-0 w-1.5 bg-white/25" />
-          <span className={cn('absolute inset-x-0 top-2 text-center text-2xl font-bold', rank === 1 ? 'text-brand-deep' : 'text-ink-inverse')} aria-hidden="true">{rank}</span>
+          <span className={cn('absolute inset-x-0 top-2 text-center text-xl font-bold sm:text-2xl', rank === 1 ? 'text-brand-deep' : 'text-ink-inverse')} aria-hidden="true">{rank}</span>
         </div>
       </div>
-      <span className="line-clamp-2 h-10 w-full shrink-0 text-center text-sm leading-5 text-ink-muted transition-colors group-hover/bar:font-semibold group-hover/bar:text-ink">
+      <span className="line-clamp-2 h-10 w-full shrink-0 text-center text-xs leading-5 text-ink-muted sm:text-sm transition-colors group-hover/bar:font-semibold group-hover/bar:text-ink">
         <span className="text-xs">{track}</span> {label}
       </span>
     </div>
