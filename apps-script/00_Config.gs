@@ -12,6 +12,8 @@ const PROP_PASSWORD_PEPPER = 'PASSWORD_PEPPER';
 const PROP_LINE_TOKEN = 'LINE_CHANNEL_TOKEN';
 /** userId หรือ groupId ของกลุ่มเจ้าหน้าที่ที่บอท LINE OA อยู่ */
 const PROP_LINE_TO = 'LINE_TO';
+/** ตั้งเป็น on เมื่ออยากให้ผู้สมัครใหม่เด้งเข้า LINE ด้วย (ค่าเริ่มต้นปิด แจ้งเฉพาะประกาศใหม่) */
+const PROP_LINE_NEW_APPLICANT = 'LINE_NEW_APPLICANT';
 const PROP_NOTIFY_EMAIL = 'NOTIFY_EMAIL';
 /** ลิงก์หน้าเว็บ (GitHub Pages) ใช้แนบในอีเมลถึงผู้สมัคร */
 const PROP_PUBLIC_SITE_URL = 'PUBLIC_SITE_URL';

@@ -42,7 +42,7 @@ function choiceText_(applicant, programs) {
 
 function notifyNewApplication_(applicant, programs) {
   const text = `ผู้สมัครใหม่ ${applicant.appNo}\n${choiceText_(applicant, programs)}\nโรงเรียน: ${applicant.schoolName} (${applicant.schoolProvince})`;
-  pushLine_(text);
+  if (getProp_(PROP_LINE_NEW_APPLICANT).trim().toLowerCase() === 'on') pushLine_(text);
   sendMail_(getProp_(PROP_NOTIFY_EMAIL), `ผู้สมัครใหม่ ${applicant.appNo}`, text);
   sendMail_(applicant.email, `ได้รับใบสมัครแล้ว เลขที่ ${applicant.appNo}`, [
     `เรียน ${Domain.fullName(applicant)}`,
